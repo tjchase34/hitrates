@@ -344,11 +344,11 @@
             let propsData = [];
             let filters = {
                 searchTerm: '',
-                sortBy: 'this_season',
+                sortBy: 'price',
                 market: 'all',
                 hitRate: {
-                    category: 'none',
-                    threshold: 0
+                    category: 'last_5',
+                    threshold: 80
                 }
             };
             
@@ -362,7 +362,6 @@
                     // More robust parsing to handle different line endings and whitespace
                     const rows = csvText.trim().replace(/\r\n/g, '\n').split('\n');
                     const headers = rows.shift().split(',').map(h => h.trim());
-                    console.log("CSV Headers:", headers); // Log headers
 
                     return rows.map(rowStr => {
                         const rowData = rowStr.split(',');
@@ -374,11 +373,11 @@
                         });
                         
                         // Now parse the values into the correct types
-                        const parsedProp = {
+                        return {
                             market: prop.market,
                             price: parseInt(prop.odds, 10),
                             player: prop.player,
-                            team: prop.team || 'DEFAULT',
+                            team: prop.team || 'DEFAULT', 
                             position: prop.position || 'POS',
                             decision: prop.decision,
                             point: parseFloat(prop.point),
@@ -393,8 +392,6 @@
                             last_season_played: parseInt(prop.last_season_played, 10),
                             last_season_hit: parseInt(prop.last_season_hit, 10),
                         };
-                        console.log("Sample Prop (first row only):", parsedProp); // Log first parsed prop
-                        return parsedProp;
                     });
                 } catch (error) {
                     console.error("Failed to load or parse CSV:", error);
@@ -547,6 +544,11 @@
 
             // --- INITIALIZATION ---
             function initialize() {
+                // Set the filter modal's inputs to reflect the default filters
+                sortBySelect.value = filters.sortBy;
+                hitRateCategorySelect.value = filters.hitRate.category;
+                hitRateThresholdInput.value = filters.hitRate.threshold;
+
                 const markets = [...new Set(propsData.map(p => p.market))];
                 markets.forEach(market => {
                     const option = document.createElement('option');
@@ -564,4 +566,5 @@
     </script>
 </body>
 </html>
+
 
