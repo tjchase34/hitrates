@@ -246,12 +246,12 @@
             <div class="filter-group">
                 <label for="sort-by">Sort By</label>
                 <select id="sort-by">
-                    <option value="this_season">This Season Hit Rate</option>
+                    <option value="this_season">This Season</option>
                     <option value="price">Price</option>
-                    <option value="last_season">Last Season Hit Rate</option>
-                    <option value="last_5">Last 5 Hit Rate</option>
-                    <option value="last_10">Last 10 Hit Rate</option>
-                    <option value="last_15">Last 15 Hit Rate</option>
+                    <option value="last_season">Last Season</option>
+                    <option value="last_5">Last 5</option>
+                    <option value="last_10">Last 10</option>
+                    <option value="last_15">Last 15</option>
                     <option value="total_hits">Total Hits</option>
                 </select>
             </div>
@@ -344,11 +344,11 @@
             let propsData = [];
             let filters = {
                 searchTerm: '',
-                sortBy: 'price',
+                sortBy: 'this_season', // Set a neutral default for subsequent interactions
                 market: 'all',
                 hitRate: {
-                    category: 'last_5',
-                    threshold: 80
+                    category: 'none',
+                    threshold: 0
                 }
             };
             
@@ -543,12 +543,8 @@
             });
 
             // --- INITIALIZATION ---
-            function initialize() {
-                // Set the filter modal's inputs to reflect the default filters
-                sortBySelect.value = filters.sortBy;
-                hitRateCategorySelect.value = filters.hitRate.category;
-                hitRateThresholdInput.value = filters.hitRate.threshold;
-
+            async function initialize() {
+                // Populate the dropdowns in the filter modal first
                 const markets = [...new Set(propsData.map(p => p.market))];
                 markets.forEach(market => {
                     const option = document.createElement('option');
@@ -557,7 +553,19 @@
                     marketFilterSelect.appendChild(option);
                 });
                 
-                applyFiltersAndRender();
+                // Perform a special, one-time sort for the initial page load.
+                // This does NOT apply a filter, it only affects the order.
+                const priorityProps = propsData.filter(p => getHitRate(p.last_5_hit, p.last_5_played) * 100 >= 80);
+                const otherProps = propsData.filter(p => getHitRate(p.last_5_hit, p.last_5_played) * 100 < 80);
+                
+                // Sort the priority group by price
+                priorityProps.sort((a, b) => b.price - a.price);
+                
+                // Combine the groups to show priority props first, then everything else
+                const initialViewData = [...priorityProps, ...otherProps];
+                
+                // Render this custom-sorted initial view
+                renderProps(initialViewData);
             }
 
             propsData = await loadCSVData();
@@ -566,5 +574,4 @@
     </script>
 </body>
 </html>
-
 
