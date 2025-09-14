@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Props</title>
+    <title>Player Props Dashboard</title>
     <style>
         /* --- Basic Setup & Fonts --- */
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
@@ -113,33 +113,120 @@
         
         #message-container { text-align: center; padding: 40px; font-size: 1.2rem; color: #6c757d; }
         .prop-card { background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); overflow: hidden; border: 1px solid #e9ecef; }
-        .card-header { color: #ffffff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background-color: #1A3D7D; }
-        .header-left { display: flex; align-items: center; gap: 15px; }
+        
+        /* --- UPDATED HEADER STYLES --- */
+        .card-header {
+            color: #ffffff;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1A3D7D;
+            gap: 15px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 0; /* Allow this container to shrink and wrap its text */
+        }
         .team-logo img { width: 48px; height: 48px; background-color: rgba(255,255,255,0.1); border-radius: 50%; }
-        .prop-details .player-line { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .prop-details .player-line { display: flex; justify-content: flex-start; align-items: center; gap: 8px; }
         .prop-details .player-name { font-size: 1.1rem; font-weight: 700; }
         .prop-details .player-position { font-size: 0.9rem; font-weight: 400; background-color: rgba(255, 255, 255, 0.15); padding: 2px 6px; border-radius: 4px; }
-        .prop-details .market-line { font-size: 1rem; font-weight: 500; }
-        .header-right .game-info { text-align: right; font-size: 0.9rem; line-height: 1.4; }
+        .prop-details .market-line { font-size: 1rem; font-weight: 500; margin-top: 4px; }
+        .header-right {
+            text-align: right;
+            flex-shrink: 0; /* Prevent this container from shrinking */
+        }
+        .game-matchup {
+            font-size: 0.9rem;
+        }
+        .game-time {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        /* --- END HEADER STYLES --- */
+
         .card-body { padding: 15px 20px; background-color: #f7f9fc; }
         .card-body-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .price-info { display: flex; align-items: center; gap: 8px; }
         .sportsbook-logo { height: 22px; width: auto; }
         .price-value { font-size: 1.1rem; font-weight: 700; color: #007bff; }
         .body-title { font-size: 0.9rem; color: #6c757d; font-weight: 500; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
-        .hit-rates-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-        .stat-box { background-color: #ffffff; border-radius: 8px; padding: 12px; text-align: center; border: 1px solid #e9ecef; }
+        
+        /* --- NEW HIT RATE STYLES --- */
+        .hit-rates-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .hit-rates-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+        }
+        /* --- END NEW HIT RATE STYLES --- */
+
+        .stat-box { 
+            background-color: #ffffff; 
+            border-radius: 8px; 
+            padding: 12px; 
+            text-align: center; 
+            border: 1px solid #e9ecef; 
+            flex: 1; /* Allow boxes to grow and shrink evenly */
+        }
         .stat-box .title { font-size: 0.8rem; font-weight: 700; color: #6c757d; margin-bottom: 8px; }
         .stat-box .percentage { font-size: 1.7rem; font-weight: 700; line-height: 1; }
         .stat-box.na .percentage { font-size: 1.1rem; color: #6c757d; }
         .stat-box .fraction { font-size: 0.85rem; color: #6c757d; margin-top: 4px; }
+
+        /* --- Mobile Optimization --- */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+            .card-header {
+                gap: 10px;
+                padding: 12px 15px;
+            }
+            .header-right {
+                text-align: right;
+            }
+            .prop-details .player-name {
+                font-size: 1rem;
+            }
+            .prop-details .market-line {
+                font-size: 0.9rem;
+            }
+            .game-matchup, .game-time {
+                font-size: 0.8rem;
+            }
+            .hit-rates-row {
+                flex-wrap: wrap; /* Allow boxes to wrap on very small screens if needed */
+            }
+            .stat-box .percentage {
+                font-size: 1.4rem;
+            }
+            .top-controls {
+                flex-direction: column;
+            }
+            #player-search, #filter-button {
+                width: 100%;
+            }
+        }
 
     </style>
 </head>
 <body>
 
     <div class="dashboard-container">
-        <h1>Props</h1>
+        <h1>Props Dashboard</h1>
 
         <div class="top-controls">
             <input type="text" id="player-search" placeholder="🔍 Search for a player...">
@@ -159,12 +246,12 @@
             <div class="filter-group">
                 <label for="sort-by">Sort By</label>
                 <select id="sort-by">
-                    <option value="this_season">This Season</option>
+                    <option value="this_season">This Season Hit Rate</option>
                     <option value="price">Price</option>
-                    <option value="last_season">Last Season</option>
-                    <option value="last_5">Last 5</option>
-                    <option value="last_10">Last 10</option>
-                    <option value="last_15">Last 15</option>
+                    <option value="last_season">Last Season Hit Rate</option>
+                    <option value="last_5">Last 5 Hit Rate</option>
+                    <option value="last_10">Last 10 Hit Rate</option>
+                    <option value="last_15">Last 15 Hit Rate</option>
                     <option value="total_hits">Total Hits</option>
                 </select>
             </div>
@@ -337,7 +424,10 @@
                                     <div class="market-line">${marketLineText}</div>
                                 </div>
                             </div>
-                            <div class="header-right"><div class="game-info">TEAM @ OPP<br>Date Time ET</div></div>
+                            <div class="header-right">
+                                <div class="game-matchup">TEAM @ OPP</div>
+                                <div class="game-time">Date Time ET</div>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="card-body-header">
@@ -347,12 +437,16 @@
                                     <span class="price-value">${formattedPrice}</span>
                                 </div>
                             </div>
-                            <div class="hit-rates-grid">
-                                ${createStatBoxHTML('Last Season', prop.last_season_hit, prop.last_season_played)}
-                                ${createStatBoxHTML('Last 5', prop.last_5_hit, prop.last_5_played)}
-                                ${createStatBoxHTML('Last 10', prop.last_10_hit, prop.last_10_played)}
-                                ${createStatBoxHTML('Last 15', prop.last_15_hit, prop.last_15_played)}
-                                ${createStatBoxHTML('This Season', prop.this_season_hit, prop.this_season_played)}
+                            <div class="hit-rates-container">
+                                <div class="hit-rates-row">
+                                    ${createStatBoxHTML('Last 5', prop.last_5_hit, prop.last_5_played)}
+                                    ${createStatBoxHTML('Last 10', prop.last_10_hit, prop.last_10_played)}
+                                    ${createStatBoxHTML('Last 15', prop.last_15_hit, prop.last_15_played)}
+                                </div>
+                                <div class="hit-rates-row">
+                                    ${createStatBoxHTML('Last Season', prop.last_season_hit, prop.last_season_played)}
+                                    ${createStatBoxHTML('This Season', prop.this_season_hit, prop.this_season_played)}
+                                </div>
                             </div>
                         </div>`;
                     propsContainer.appendChild(card);
