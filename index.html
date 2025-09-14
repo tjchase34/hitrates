@@ -238,7 +238,6 @@
         </div>
     </div>
 
-    <!-- Filter Modal HTML -->
     <div class="modal-overlay" id="filter-modal">
         <div class="modal-content">
             <h2>Filters & Sorting</h2>
@@ -249,9 +248,10 @@
                     <option value="this_season">This Season</option>
                     <option value="price">Price</option>
                     <option value="last_season">Last Season</option>
+                    <option value="last_3">Last 3</option>
                     <option value="last_5">Last 5</option>
-                    <option value="last_10">Last 10</option>
-                    <option value="last_15">Last 15</option>
+                    <option value="last_7">Last 7</option>
+                    <option value="last_7_price">Last 7 & Price</option>
                     <option value="total_hits">Total Hits</option>
                 </select>
             </div>
@@ -260,8 +260,7 @@
                 <label for="market-filter">Market Type</label>
                 <select id="market-filter">
                     <option value="all">All Markets</option>
-                    <!-- Options will be populated by JavaScript -->
-                </select>
+                    </select>
             </div>
 
             <div class="filter-group">
@@ -271,9 +270,9 @@
                         <option value="none">-- Select Category --</option>
                         <option value="this_season">This Season</option>
                         <option value="last_season">Last Season</option>
+                        <option value="last_3">Last 3</option>
                         <option value="last_5">Last 5</option>
-                        <option value="last_10">Last 10</option>
-                        <option value="last_15">Last 15</option>
+                        <option value="last_7">Last 7</option>
                     </select>
                     <input type="number" id="hit-rate-threshold" placeholder="e.g., 80" min="0" max="100" style="width: 40%;">
                 </div>
@@ -359,7 +358,6 @@
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                     const csvText = await response.text();
                     
-                    // More robust parsing to handle different line endings and whitespace
                     const rows = csvText.trim().replace(/\r\n/g, '\n').split('\n');
                     const headers = rows.shift().split(',').map(h => h.trim());
 
@@ -367,28 +365,30 @@
                         const rowData = rowStr.split(',');
                         const prop = {};
                         
-                        // Dynamically build the object based on headers
                         headers.forEach((header, index) => {
                             prop[header] = rowData[index] ? rowData[index].trim() : undefined;
                         });
                         
-                        // Now parse the values into the correct types
                         return {
                             market: prop.market,
                             price: parseInt(prop.odds, 10),
                             player: prop.player,
                             team: prop.team || 'DEFAULT', 
                             position: prop.position || 'POS',
+                            against: prop.against || 'OPP',
+                            game_time: prop.game_time,
+                            home_team: prop.home_team || 'HOME',
+                            away_team: prop.away_team || 'AWAY',
                             decision: prop.decision,
                             point: parseFloat(prop.point),
                             this_season_played: parseInt(prop.this_season_played, 10),
                             this_season_hit: parseInt(prop.this_season_hit, 10),
+                            last_3_played: parseInt(prop.last_3_played, 10),
+                            last_3_hit: parseInt(prop.last_3_hit, 10),
                             last_5_played: parseInt(prop.last_5_played, 10),
                             last_5_hit: parseInt(prop.last_5_hit, 10),
-                            last_10_played: parseInt(prop.last_10_played, 10),
-                            last_10_hit: parseInt(prop.last_10_hit, 10),
-                            last_15_played: parseInt(prop.last_15_played, 10),
-                            last_15_hit: parseInt(prop.last_15_hit, 10),
+                            last_7_played: parseInt(prop.last_7_played, 10),
+                            last_7_hit: parseInt(prop.last_7_hit, 10),
                             last_season_played: parseInt(prop.last_season_played, 10),
                             last_season_hit: parseInt(prop.last_season_hit, 10),
                         };
@@ -402,7 +402,22 @@
             
             // --- HELPER FUNCTIONS ---
             const getHitRate = (hit, played) => (isNaN(hit) || isNaN(played) || played === 0) ? -1 : hit / played;
-            const getTotalHits = (prop) => (prop.last_season_hit || 0) + (prop.last_5_hit || 0) + (prop.last_10_hit || 0) + (prop.last_15_hit || 0) + (prop.this_season_hit || 0);
+            const getTotalHits = (prop) => (prop.last_season_hit || 0) + (prop.last_3_hit || 0) + (prop.last_5_hit || 0) + (prop.last_7_hit || 0) + (prop.this_season_hit || 0);
+            
+            const formatGameTime = (timeString) => {
+                if (!timeString) return "Date TBD";
+                try {
+                    const date = new Date(timeString.replace(' ', 'T'));
+                    const dateOptions = { weekday: 'short' }; 
+                    const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
+                    const formattedDay = date.toLocaleDateString('en-US', dateOptions).toUpperCase();
+                    const formattedTime = date.toLocaleTimeString('en-US', timeOptions);
+                    return `${formattedDay} @ ${formattedTime} ET`;
+                } catch (e) {
+                    console.error("Could not parse date:", timeString);
+                    return "Date TBD";
+                }
+            };
 
             // --- FILTER & RENDER LOGIC ---
             function applyFiltersAndRender() {
@@ -426,15 +441,23 @@
                 renderProps(filteredData);
             }
 
+            // --- CHANGED: Added new sorting case ---
             function sortData(dataArray, key) {
                 dataArray.sort((a, b) => {
                     switch (key) {
                         case 'price': return b.price - a.price;
                         case 'total_hits': return getTotalHits(b) - getTotalHits(a);
                         case 'last_season': return getHitRate(b.last_season_hit, b.last_season_played) - getHitRate(a.last_season_hit, a.last_season_played);
+                        case 'last_3': return getHitRate(b.last_3_hit, b.last_3_played) - getHitRate(a.last_3_hit, a.last_3_played);
                         case 'last_5': return getHitRate(b.last_5_hit, b.last_5_played) - getHitRate(a.last_5_hit, a.last_5_played);
-                        case 'last_10': return getHitRate(b.last_10_hit, b.last_10_played) - getHitRate(a.last_10_hit, a.last_10_played);
-                        case 'last_15': return getHitRate(b.last_15_hit, b.last_15_played) - getHitRate(a.last_15_hit, a.last_15_played);
+                        case 'last_7': return getHitRate(b.last_7_hit, b.last_7_played) - getHitRate(a.last_7_hit, a.last_7_played);
+                        case 'last_7_price':
+                            // Primary sort: Last 7 hit rate (descending)
+                            const last7Compare = getHitRate(b.last_7_hit, b.last_7_played) - getHitRate(a.last_7_hit, a.last_7_played);
+                            // If rates are different, sort by them
+                            if (last7Compare !== 0) return last7Compare;
+                            // Secondary sort: If rates are same, sort by price (descending)
+                            return b.price - a.price;
                         default: return getHitRate(b.this_season_hit, b.this_season_played) - getHitRate(a.this_season_hit, a.this_season_played);
                     }
                 });
@@ -458,6 +481,7 @@
                     const marketLineText = prop.market.includes('anytime_td') ? formattedMarket : `${formattedDecision} ${prop.point} ${formattedMarket}`;
                     
                     const team = teamData[prop.team] || teamData['DEFAULT'];
+                    const formattedGameTime = formatGameTime(prop.game_time);
 
                     card.innerHTML = `
                         <div class="card-header" style="background-color: ${team.color};">
@@ -469,8 +493,8 @@
                                 </div>
                             </div>
                             <div class="header-right">
-                                <div class="game-matchup">TEAM @ OPP</div>
-                                <div class="game-time">Date Time ET</div>
+                                <div class="game-matchup">${prop.home_team} @ ${prop.away_team}</div>
+                                <div class="game-time">${formattedGameTime}</div>
                             </div>
                         </div>
                         <div class="card-body">
@@ -483,9 +507,9 @@
                             </div>
                             <div class="hit-rates-container">
                                 <div class="hit-rates-row">
+                                    ${createStatBoxHTML('Last 3', prop.last_3_hit, prop.last_3_played)}
                                     ${createStatBoxHTML('Last 5', prop.last_5_hit, prop.last_5_played)}
-                                    ${createStatBoxHTML('Last 10', prop.last_10_hit, prop.last_10_played)}
-                                    ${createStatBoxHTML('Last 15', prop.last_15_hit, prop.last_15_played)}
+                                    ${createStatBoxHTML('Last 7', prop.last_7_hit, prop.last_7_played)}
                                 </div>
                                 <div class="hit-rates-row">
                                     ${createStatBoxHTML('Last Season', prop.last_season_hit, prop.last_season_played)}
@@ -544,7 +568,6 @@
 
             // --- INITIALIZATION ---
             async function initialize() {
-                // Populate the dropdowns in the filter modal first
                 const markets = [...new Set(propsData.map(p => p.market))];
                 markets.forEach(market => {
                     const option = document.createElement('option');
@@ -553,18 +576,13 @@
                     marketFilterSelect.appendChild(option);
                 });
                 
-                // Perform a special, one-time sort for the initial page load.
-                // This does NOT apply a filter, it only affects the order.
                 const priorityProps = propsData.filter(p => getHitRate(p.last_5_hit, p.last_5_played) * 100 >= 80);
                 const otherProps = propsData.filter(p => getHitRate(p.last_5_hit, p.last_5_played) * 100 < 80);
                 
-                // Sort the priority group by price
                 priorityProps.sort((a, b) => b.price - a.price);
                 
-                // Combine the groups to show priority props first, then everything else
                 const initialViewData = [...priorityProps, ...otherProps];
                 
-                // Render this custom-sorted initial view
                 renderProps(initialViewData);
             }
 
@@ -574,4 +592,3 @@
     </script>
 </body>
 </html>
-
