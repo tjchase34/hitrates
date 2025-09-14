@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Props</title>
+    <style>
+        /* --- Basic Setup & Fonts --- */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .dashboard-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1A3D7D;
+        }
+        
+        /* --- Top Controls (Search & Filter) --- */
+        .top-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        #player-search {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            font-size: 1rem;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+        }
+
+        #filter-button {
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            background-color: #1A3D7D;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #filter-button:hover {
+            background-color: #143064;
+        }
+
+        /* --- Filter Modal --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .modal-content h2 { margin-top: 0; }
+        .filter-group { margin-bottom: 20px; }
+        .filter-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .filter-group select, .filter-group input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        .modal-actions button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        #apply-filters-btn { background-color: #1A3D7D; color: white; }
+        #reset-filters-btn { background-color: #e9ecef; color: #495057; }
+
+        /* --- Props Container --- */
+        #props-container {
+            display: grid;
+            gap: 20px;
+        }
+        
+        #message-container { text-align: center; padding: 40px; font-size: 1.2rem; color: #6c757d; }
+        .prop-card { background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); overflow: hidden; border: 1px solid #e9ecef; }
+        .card-header { color: #ffffff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background-color: #1A3D7D; }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .team-logo img { width: 48px; height: 48px; background-color: rgba(255,255,255,0.1); border-radius: 50%; }
+        .prop-details .player-line { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .prop-details .player-name { font-size: 1.1rem; font-weight: 700; }
+        .prop-details .player-position { font-size: 0.9rem; font-weight: 400; background-color: rgba(255, 255, 255, 0.15); padding: 2px 6px; border-radius: 4px; }
+        .prop-details .market-line { font-size: 1rem; font-weight: 500; }
+        .header-right .game-info { text-align: right; font-size: 0.9rem; line-height: 1.4; }
+        .card-body { padding: 15px 20px; background-color: #f7f9fc; }
+        .card-body-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .price-info { display: flex; align-items: center; gap: 8px; }
+        .sportsbook-logo { height: 22px; width: auto; }
+        .price-value { font-size: 1.1rem; font-weight: 700; color: #007bff; }
+        .body-title { font-size: 0.9rem; color: #6c757d; font-weight: 500; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .hit-rates-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+        .stat-box { background-color: #ffffff; border-radius: 8px; padding: 12px; text-align: center; border: 1px solid #e9ecef; }
+        .stat-box .title { font-size: 0.8rem; font-weight: 700; color: #6c757d; margin-bottom: 8px; }
+        .stat-box .percentage { font-size: 1.7rem; font-weight: 700; line-height: 1; }
+        .stat-box.na .percentage { font-size: 1.1rem; color: #6c757d; }
+        .stat-box .fraction { font-size: 0.85rem; color: #6c757d; margin-top: 4px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <h1>Props</h1>
+
+        <div class="top-controls">
+            <input type="text" id="player-search" placeholder="🔍 Search for a player...">
+            <button id="filter-button">Filters</button>
+        </div>
+
+        <div id="props-container">
+            <div id="message-container">Loading data...</div>
+        </div>
+    </div>
+
+    <!-- Filter Modal HTML -->
+    <div class="modal-overlay" id="filter-modal">
+        <div class="modal-content">
+            <h2>Filters & Sorting</h2>
+            
+            <div class="filter-group">
+                <label for="sort-by">Sort By</label>
+                <select id="sort-by">
+                    <option value="this_season">This Season</option>
+                    <option value="price">Price</option>
+                    <option value="last_season">Last Season</option>
+                    <option value="last_5">Last 5</option>
+                    <option value="last_10">Last 10</option>
+                    <option value="last_15">Last 15</option>
+                    <option value="total_hits">Total Hits</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="market-filter">Market Type</label>
+                <select id="market-filter">
+                    <option value="all">All Markets</option>
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="hit-rate-category">Min Hit Rate (%)</label>
+                <div style="display: flex; gap: 10px;">
+                    <select id="hit-rate-category" style="width: 60%;">
+                        <option value="none">-- Select Category --</option>
+                        <option value="this_season">This Season</option>
+                        <option value="last_season">Last Season</option>
+                        <option value="last_5">Last 5</option>
+                        <option value="last_10">Last 10</option>
+                        <option value="last_15">Last 15</option>
+                    </select>
+                    <input type="number" id="hit-rate-threshold" placeholder="e.g., 80" min="0" max="100" style="width: 40%;">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="reset-filters-btn">Reset</button>
+                <button id="apply-filters-btn">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            
+            // --- DOM ELEMENTS ---
+            const propsContainer = document.getElementById('props-container');
+            const messageContainer = document.getElementById('message-container');
+            const searchInput = document.getElementById('player-search');
+            const filterButton = document.getElementById('filter-button');
+            const modal = document.getElementById('filter-modal');
+            const applyFiltersBtn = document.getElementById('apply-filters-btn');
+            const resetFiltersBtn = document.getElementById('reset-filters-btn');
+            const sortBySelect = document.getElementById('sort-by');
+            const marketFilterSelect = document.getElementById('market-filter');
+            const hitRateCategorySelect = document.getElementById('hit-rate-category');
+            const hitRateThresholdInput = document.getElementById('hit-rate-threshold');
+
+            let propsData = [];
+            let filters = {
+                searchTerm: '',
+                sortBy: 'this_season',
+                market: 'all',
+                hitRate: {
+                    category: 'none',
+                    threshold: 0
+                }
+            };
+            
+            // --- DATA FETCHING & PARSING ---
+            async function loadCSVData() {
+                try {
+                    const response = await fetch('latest_hitrates.csv');
+                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                    const csvText = await response.text();
+                    const rows = csvText.trim().split('\n');
+                    const headers = rows.shift().split(',');
+                    return rows.map(rowStr => {
+                        const row = rowStr.split(',');
+                        return {
+                            market: row[headers.indexOf('market')],
+                            price: parseInt(row[headers.indexOf('odds')], 10),
+                            player: row[headers.indexOf('player')],
+                            decision: row[headers.indexOf('decision')],
+                            point: parseFloat(row[headers.indexOf('point')]),
+                            this_season_played: parseInt(row[headers.indexOf('this_season_played')], 10),
+                            this_season_hit: parseInt(row[headers.indexOf('this_season_hit')], 10),
+                            last_5_played: parseInt(row[headers.indexOf('last_5_played')], 10),
+                            last_5_hit: parseInt(row[headers.indexOf('last_5_hit')], 10),
+                            last_10_played: parseInt(row[headers.indexOf('last_10_played')], 10),
+                            last_10_hit: parseInt(row[headers.indexOf('last_10_hit')], 10),
+                            last_15_played: parseInt(row[headers.indexOf('last_15_played')], 10),
+                            last_15_hit: parseInt(row[headers.indexOf('last_15_hit')], 10),
+                            last_season_played: parseInt(row[headers.indexOf('last_season_played')], 10),
+                            last_season_hit: parseInt(row[headers.indexOf('last_season_hit')], 10),
+                            position: 'POS',
+                            team_logo: 'https://placehold.co/100x100/1A3D7D/FFFFFF?text=LOGO'
+                        };
+                    });
+                } catch (error) {
+                    console.error("Failed to load or parse CSV:", error);
+                    messageContainer.textContent = 'Error: Could not load data. Make sure latest_hitrates.csv is in the same folder.';
+                    return [];
+                }
+            }
+            
+            // --- HELPER FUNCTIONS ---
+            const getHitRate = (hit, played) => (isNaN(hit) || isNaN(played) || played === 0) ? -1 : hit / played;
+            const getTotalHits = (prop) => (prop.last_season_hit || 0) + (prop.last_5_hit || 0) + (prop.last_10_hit || 0) + (prop.last_15_hit || 0) + (prop.this_season_hit || 0);
+
+            // --- FILTER & RENDER LOGIC ---
+            function applyFiltersAndRender() {
+                let filteredData = [...propsData];
+
+                // 1. Apply Search Filter
+                if (filters.searchTerm) {
+                    filteredData = filteredData.filter(prop => prop.player.toLowerCase().includes(filters.searchTerm));
+                }
+
+                // 2. Apply Market Filter
+                if (filters.market !== 'all') {
+                    filteredData = filteredData.filter(prop => prop.market === filters.market);
+                }
+
+                // 3. Apply Hit Rate Filter
+                if (filters.hitRate.category !== 'none' && filters.hitRate.threshold > 0) {
+                    filteredData = filteredData.filter(prop => {
+                        const cat = filters.hitRate.category;
+                        const rate = getHitRate(prop[`${cat}_hit`], prop[`${cat}_played`]);
+                        return rate * 100 >= filters.hitRate.threshold;
+                    });
+                }
+
+                // 4. Sort the filtered data
+                sortData(filteredData, filters.sortBy);
+                
+                // 5. Render the final list
+                renderProps(filteredData);
+            }
+
+            function sortData(dataArray, key) {
+                dataArray.sort((a, b) => {
+                    switch (key) {
+                        case 'price': return b.price - a.price;
+                        case 'total_hits': return getTotalHits(b) - getTotalHits(a);
+                        case 'last_season': return getHitRate(b.last_season_hit, b.last_season_played) - getHitRate(a.last_season_hit, a.last_season_played);
+                        case 'last_5': return getHitRate(b.last_5_hit, b.last_5_played) - getHitRate(a.last_5_hit, a.last_5_played);
+                        case 'last_10': return getHitRate(b.last_10_hit, b.last_10_played) - getHitRate(a.last_10_hit, a.last_10_played);
+                        case 'last_15': return getHitRate(b.last_15_hit, b.last_15_played) - getHitRate(a.last_15_hit, a.last_15_played);
+                        default: return getHitRate(b.this_season_hit, b.this_season_played) - getHitRate(a.this_season_hit, a.this_season_played);
+                    }
+                });
+            }
+
+            function renderProps(dataToRender) {
+                propsContainer.innerHTML = '';
+                if (dataToRender.length === 0) {
+                    messageContainer.textContent = 'No props match your criteria.';
+                    messageContainer.style.display = 'block';
+                    return;
+                }
+                messageContainer.style.display = 'none';
+
+                dataToRender.forEach(prop => {
+                    const card = document.createElement('div');
+                    card.className = 'prop-card';
+                    const formattedPrice = prop.price > 0 ? `+${prop.price}` : prop.price;
+                    const formattedDecision = prop.decision.charAt(0).toUpperCase() + prop.decision.slice(1);
+                    const formattedMarket = getFormattedMarketName(prop.market);
+                    const marketLineText = prop.market.includes('anytime_td') ? formattedMarket : `${formattedDecision} ${prop.point} ${formattedMarket}`;
+
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <div class="header-left">
+                                <div class="team-logo"><img src="${prop.team_logo}" alt="Team Logo"></div>
+                                <div class="prop-details">
+                                    <div class="player-line"><span class="player-name">${prop.player}</span><span class="player-position">${prop.position}</span></div>
+                                    <div class="market-line">${marketLineText}</div>
+                                </div>
+                            </div>
+                            <div class="header-right"><div class="game-info">TEAM @ OPP<br>Date Time ET</div></div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-body-header">
+                                <h3 class="body-title">📊 HIT RATES</h3>
+                                <div class="price-info">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/94/FanDuel_Sports_Network_logo.svg" alt="FanDuel Logo" class="sportsbook-logo">
+                                    <span class="price-value">${formattedPrice}</span>
+                                </div>
+                            </div>
+                            <div class="hit-rates-grid">
+                                ${createStatBoxHTML('Last Season', prop.last_season_hit, prop.last_season_played)}
+                                ${createStatBoxHTML('Last 5', prop.last_5_hit, prop.last_5_played)}
+                                ${createStatBoxHTML('Last 10', prop.last_10_hit, prop.last_10_played)}
+                                ${createStatBoxHTML('Last 15', prop.last_15_hit, prop.last_15_played)}
+                                ${createStatBoxHTML('This Season', prop.this_season_hit, prop.this_season_played)}
+                            </div>
+                        </div>`;
+                    propsContainer.appendChild(card);
+                });
+            }
+            
+            const getFormattedMarketName = (market) => {
+                const cleanMarket = market.replace('_over', '').replace('_under', '');
+                switch (cleanMarket) {
+                    case 'player_anytime_td': return 'Anytime Touchdown';
+                    case 'player_pass_yds': return 'Passing Yards';
+                    case 'player_rec_yds': return 'Receiving Yards';
+                    case 'player_tds': return 'Touchdowns';
+                    default: return market.split('_').filter(w => !['player', 'over', 'under'].includes(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                }
+            };
+
+            const createStatBoxHTML = (title, hit, played) => {
+                if (isNaN(hit) || isNaN(played)) return `<div class="stat-box na"><div class="title">${title}</div><div class="percentage">N/A</div><div class="fraction">No Data</div></div>`;
+                const percentage = played > 0 ? Math.round((hit / played) * 100) : 0;
+                return `<div class="stat-box"><div class="title">${title}</div><div class="percentage">${percentage}%</div><div class="fraction">${hit}/${played}</div></div>`;
+            };
+            
+            // --- EVENT LISTENERS ---
+            filterButton.addEventListener('click', () => modal.style.display = 'flex');
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+            
+            applyFiltersBtn.addEventListener('click', () => {
+                filters.sortBy = sortBySelect.value;
+                filters.market = marketFilterSelect.value;
+                filters.hitRate.category = hitRateCategorySelect.value;
+                filters.hitRate.threshold = parseInt(hitRateThresholdInput.value, 10) || 0;
+                applyFiltersAndRender();
+                modal.style.display = 'none';
+            });
+            
+            resetFiltersBtn.addEventListener('click', () => {
+                // Reset filter state object
+                filters = { searchTerm: searchInput.value, sortBy: 'this_season', market: 'all', hitRate: { category: 'none', threshold: 0 }};
+                // Reset form elements
+                sortBySelect.value = 'this_season';
+                marketFilterSelect.value = 'all';
+                hitRateCategorySelect.value = 'none';
+                hitRateThresholdInput.value = '';
+                applyFiltersAndRender();
+                modal.style.display = 'none';
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                filters.searchTerm = e.target.value.toLowerCase();
+                applyFiltersAndRender();
+            });
+
+            // --- INITIALIZATION ---
+            function initialize() {
+                // Populate market filter dropdown
+                const markets = [...new Set(propsData.map(p => p.market))];
+                markets.forEach(market => {
+                    const option = document.createElement('option');
+                    option.value = market;
+                    option.textContent = getFormattedMarketName(market);
+                    marketFilterSelect.appendChild(option);
+                });
+                
+                applyFiltersAndRender();
+            }
+
+            propsData = await loadCSVData();
+            initialize();
+        });
+    </script>
+</body>
+</html>
+
