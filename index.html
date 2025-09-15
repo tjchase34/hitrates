@@ -251,7 +251,7 @@
                     <option value="last_3">Last 3</option>
                     <option value="last_5">Last 5</option>
                     <option value="last_7">Last 7</option>
-                    <option value="last_7_price">Last 7 & Price</option>
+                    <option value="last_7_price" selected>Last 7 & Price</option>
                     <option value="total_hits">Total Hits</option>
                 </select>
             </div>
@@ -341,9 +341,10 @@
             };
 
             let propsData = [];
+            // --- CHANGED: Default sort state is now 'last_7_price' ---
             let filters = {
                 searchTerm: '',
-                sortBy: 'this_season', // Set a neutral default for subsequent interactions
+                sortBy: 'last_7_price', 
                 market: 'all',
                 hitRate: {
                     category: 'none',
@@ -441,7 +442,6 @@
                 renderProps(filteredData);
             }
 
-            // --- CHANGED: Added new sorting case ---
             function sortData(dataArray, key) {
                 dataArray.sort((a, b) => {
                     switch (key) {
@@ -452,11 +452,8 @@
                         case 'last_5': return getHitRate(b.last_5_hit, b.last_5_played) - getHitRate(a.last_5_hit, a.last_5_played);
                         case 'last_7': return getHitRate(b.last_7_hit, b.last_7_played) - getHitRate(a.last_7_hit, a.last_7_played);
                         case 'last_7_price':
-                            // Primary sort: Last 7 hit rate (descending)
                             const last7Compare = getHitRate(b.last_7_hit, b.last_7_played) - getHitRate(a.last_7_hit, a.last_7_played);
-                            // If rates are different, sort by them
                             if (last7Compare !== 0) return last7Compare;
-                            // Secondary sort: If rates are same, sort by price (descending)
                             return b.price - a.price;
                         default: return getHitRate(b.this_season_hit, b.this_season_played) - getHitRate(a.this_season_hit, a.this_season_played);
                     }
@@ -551,9 +548,10 @@
                 modal.style.display = 'none';
             });
             
+            // --- CHANGED: Reset now defaults to 'last_7_price' ---
             resetFiltersBtn.addEventListener('click', () => {
-                filters = { searchTerm: searchInput.value, sortBy: 'this_season', market: 'all', hitRate: { category: 'none', threshold: 0 }};
-                sortBySelect.value = 'this_season';
+                filters = { searchTerm: searchInput.value, sortBy: 'last_7_price', market: 'all', hitRate: { category: 'none', threshold: 0 }};
+                sortBySelect.value = 'last_7_price';
                 marketFilterSelect.value = 'all';
                 hitRateCategorySelect.value = 'none';
                 hitRateThresholdInput.value = '';
@@ -566,8 +564,9 @@
                 applyFiltersAndRender();
             });
 
-            // --- INITIALIZATION ---
+            // --- CHANGED: Initialization now uses the main render function to apply default sort ---
             async function initialize() {
+                // Populate the dropdowns in the filter modal first
                 const markets = [...new Set(propsData.map(p => p.market))];
                 markets.forEach(market => {
                     const option = document.createElement('option');
@@ -576,14 +575,8 @@
                     marketFilterSelect.appendChild(option);
                 });
                 
-                const priorityProps = propsData.filter(p => getHitRate(p.last_5_hit, p.last_5_played) * 100 >= 80);
-                const otherProps = propsData.filter(p => getHitRate(p.last_5_hit, p.last_5_played) * 100 < 80);
-                
-                priorityProps.sort((a, b) => b.price - a.price);
-                
-                const initialViewData = [...priorityProps, ...otherProps];
-                
-                renderProps(initialViewData);
+                // Render the initial view using the default filters (which now includes the new sort)
+                applyFiltersAndRender();
             }
 
             propsData = await loadCSVData();
