@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player Props Dashboard</title>
+    <title>Prop Finder</title>
     <style>
         /* --- Basic Setup & Fonts --- */
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
@@ -226,7 +226,7 @@
 <body>
 
     <div class="dashboard-container">
-        <h1>Props Dashboard</h1>
+        <h1>Prop Finder</h1>
 
         <div class="top-controls">
             <input type="text" id="player-search" placeholder="🔍 Search for a player...">
@@ -288,6 +288,9 @@
     <script>
         document.addEventListener('DOMContentLoaded', async function () {
             
+            // --- NEW: Get the current time once when the page loads ---
+            const currentTime = new Date();
+
             // --- DOM ELEMENTS ---
             const propsContainer = document.getElementById('props-container');
             const messageContainer = document.getElementById('message-container');
@@ -341,7 +344,6 @@
             };
 
             let propsData = [];
-            // --- CHANGED: Default sort state is now 'last_7_price' ---
             let filters = {
                 searchTerm: '',
                 sortBy: 'last_7_price', 
@@ -424,6 +426,17 @@
             function applyFiltersAndRender() {
                 let filteredData = [...propsData];
 
+                // --- CHANGED: Filter out props for games that are in the past ---
+                filteredData = filteredData.filter(prop => {
+                    if (!prop.game_time) {
+                        return true; // Keep props that don't have a game time
+                    }
+                    // Create a Date object from the game_time string
+                    const gameTime = new Date(prop.game_time.replace(' ', 'T'));
+                    // Keep the prop only if its game time is in the future
+                    return !isNaN(gameTime.getTime()) && gameTime > currentTime;
+                });
+                
                 if (filters.searchTerm) {
                     filteredData = filteredData.filter(prop => prop.player.toLowerCase().includes(filters.searchTerm));
                 }
@@ -548,7 +561,6 @@
                 modal.style.display = 'none';
             });
             
-            // --- CHANGED: Reset now defaults to 'last_7_price' ---
             resetFiltersBtn.addEventListener('click', () => {
                 filters = { searchTerm: searchInput.value, sortBy: 'last_7_price', market: 'all', hitRate: { category: 'none', threshold: 0 }};
                 sortBySelect.value = 'last_7_price';
@@ -564,7 +576,7 @@
                 applyFiltersAndRender();
             });
 
-            // --- CHANGED: Initialization now uses the main render function to apply default sort ---
+            // --- INITIALIZATION ---
             async function initialize() {
                 // Populate the dropdowns in the filter modal first
                 const markets = [...new Set(propsData.map(p => p.market))];
