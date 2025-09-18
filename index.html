@@ -260,7 +260,7 @@
                 <label for="market-filter">Market Type</label>
                 <select id="market-filter">
                     <option value="all">All Markets</option>
-                    </select>
+                </select>
             </div>
 
             <div class="filter-group">
@@ -354,10 +354,13 @@
                 }
             };
             
-            // --- DATA FETCHING & PARSING ---
+            // --- MODIFIED: DATA FETCHING & PARSING FROM GIST ---
             async function loadCSVData() {
+                // !!! IMPORTANT: Replace this URL with the "Raw" URL of your Gist file
+                const gistRawUrl = 'https://gist.githubusercontent.com/tjchase34/1b0d5c961b90b5eda95cacd7a9fe0dc7/raw/data.csv';
+
                 try {
-                    const response = await fetch('data.csv');
+                    const response = await fetch(gistRawUrl, { cache: "no-store" }); // Use no-store to always get the latest version
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                     const csvText = await response.text();
                     
@@ -397,8 +400,8 @@
                         };
                     });
                 } catch (error) {
-                    console.error("Failed to load or parse CSV:", error);
-                    messageContainer.textContent = 'Error: Could not load data. Make sure data.csv is in the same folder.';
+                    console.error("Failed to load or parse data from Gist:", error);
+                    messageContainer.textContent = 'Error: Could not load data from the remote source.';
                     return [];
                 }
             }
