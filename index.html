@@ -357,7 +357,7 @@
             // --- DATA FETCHING & PARSING ---
             async function loadCSVData() {
                 try {
-                    const response = await fetch('latest_hitrates.csv');
+                    const response = await fetch('data.csv');
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                     const csvText = await response.text();
                     
@@ -398,7 +398,7 @@
                     });
                 } catch (error) {
                     console.error("Failed to load or parse CSV:", error);
-                    messageContainer.textContent = 'Error: Could not load data. Make sure latest_hitrates.csv is in the same folder.';
+                    messageContainer.textContent = 'Error: Could not load data. Make sure data.csv is in the same folder.';
                     return [];
                 }
             }
