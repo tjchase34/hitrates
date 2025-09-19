@@ -3,16 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prop Finder</title>
+    <title>Prop Finder - Analyst's View</title>
     <style>
         /* --- Basic Setup & Fonts --- */
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
+        :root {
+            --primary-color: #1A3D7D;
+            --light-gray: #f0f2f5;
+            --medium-gray: #dee2e6;
+            --dark-gray: #6c757d;
+            --text-color: #333;
+            --background-color: #ffffff;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        }
+
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
-            padding: 20px;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            margin: 0;
         }
         
         .dashboard-container {
@@ -20,264 +30,232 @@
             margin: 0 auto;
         }
 
-        h1 {
-            text-align: center;
-            color: #1A3D7D;
+        /* --- Sticky Header & Controls --- */
+        .sticky-header {
+            background-color: var(--background-color);
+            border-bottom: 1px solid var(--medium-gray);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
-        
-        /* --- Top Controls (Search & Filter) --- */
-        .top-controls {
+        .header-main {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            justify-content: space-between;
             align-items: center;
+            padding: 12px 16px;
+        }
+        .header-main h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin: 0;
+        }
+        #toggle-controls-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+        #toggle-controls-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+        #toggle-controls-btn.collapsed svg {
+            transform: rotate(180deg);
         }
 
+        .controls-container {
+            max-height: 500px; /* Arbitrary large height */
+            overflow: hidden;
+            padding: 0 16px 12px 16px;
+            transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out;
+        }
+        .controls-container.hidden {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .search-bar-container {
+            position: relative;
+            margin-bottom: 12px;
+        }
         #player-search {
-            flex-grow: 1;
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
+            width: 100%;
+            padding: 12px 48px 12px 16px; 
+            border-radius: 10px;
+            border: 1px solid var(--medium-gray);
             font-size: 1rem;
             box-sizing: border-box;
             -webkit-appearance: none;
         }
-
         #filter-button {
-            padding: 12px 20px;
-            font-size: 1rem;
-            font-weight: 500;
-            background-color: #1A3D7D;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        #filter-button:hover {
-            background-color: #143064;
-        }
-
-        /* --- Filter Modal --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            display: none; /* Hidden by default */
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+            padding: 8px;
+            display: flex;
+            align-items: center;
             justify-content: center;
-            align-items: center;
-            z-index: 1000;
         }
-        .modal-content {
-            background-color: #fff;
-            padding: 25px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 450px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-        }
-        .modal-content h2 { margin-top: 0; }
-        .filter-group { margin-bottom: 20px; }
-        .filter-group label { display: block; margin-bottom: 8px; font-weight: 500; }
-        .filter-group select, .filter-group input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-        }
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 25px;
-        }
-        .modal-actions button {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: 500;
-        }
-        #apply-filters-btn { background-color: #1A3D7D; color: white; }
-        #reset-filters-btn { background-color: #e9ecef; color: #495057; }
+        #filter-button svg { width: 24px; height: 24px; fill: var(--primary-color); }
 
-        /* --- Props Container --- */
-        #props-container {
-            display: grid;
-            gap: 20px;
+        .slider-container {
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
         }
-        
-        #message-container { text-align: center; padding: 40px; font-size: 1.2rem; color: #6c757d; }
-        .prop-card { background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); overflow: hidden; border: 1px solid #e9ecef; }
-        
-        /* --- UPDATED HEADER STYLES --- */
-        .card-header {
-            color: #ffffff;
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            /* background-color is now set dynamically */
-            gap: 15px;
-        }
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            min-width: 0; /* Allow this container to shrink and wrap its text */
-        }
-        .team-logo img { width: 48px; height: 48px; background-color: rgba(255,255,255,0.1); border-radius: 50%; }
-        .prop-details .player-line { display: flex; justify-content: flex-start; align-items: center; gap: 8px; }
-        .prop-details .player-name { font-size: 1.1rem; font-weight: 700; }
-        .prop-details .player-position { font-size: 0.9rem; font-weight: 400; background-color: rgba(255, 255, 255, 0.15); padding: 2px 6px; border-radius: 4px; }
-        .prop-details .market-line { font-size: 1rem; font-weight: 500; margin-top: 4px; }
-        .header-right {
-            text-align: right;
-            flex-shrink: 0; /* Prevent this container from shrinking */
-        }
-        .game-matchup {
-            font-size: 0.9rem;
-        }
-        .game-time {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-        /* --- END HEADER STYLES --- */
+        .slider-container::-webkit-scrollbar { display: none; }
+        .slider-container { -ms-overflow-style: none; scrollbar-width: none; }
+        #game-slider, #market-slider { display: inline-flex; gap: 10px; }
+        #market-slider { margin-bottom: 12px; }
 
-        .card-body { padding: 15px 20px; background-color: #f7f9fc; }
-        .card-body-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .price-info { display: flex; align-items: center; gap: 8px; }
-        .sportsbook-logo { height: 22px; width: auto; }
-        .price-value { font-size: 1.1rem; font-weight: 700; color: #007bff; }
-        .body-title { font-size: 0.9rem; color: #6c757d; font-weight: 500; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        /* --- NEW HIT RATE STYLES --- */
-        .hit-rates-container {
+        .slider-chip { 
+            padding: 8px 16px; 
+            border: 1px solid var(--medium-gray); 
+            border-radius: 20px; 
+            cursor: pointer; 
+            background-color: var(--background-color); 
+            transition: all 0.2s ease-in-out; 
+            font-size: 0.9rem; 
+            font-weight: 500; 
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
-        }
-        .hit-rates-row {
-            display: flex;
             justify-content: center;
+            user-select: none;
+            gap: 4px;
+        }
+        .slider-chip.active, .slider-chip:hover { border-color: var(--primary-color); background-color: #eef2ff; color: var(--primary-color); }
+        .slider-matchup { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+        .team-logo-slider { width: 24px; height: 24px; border-radius: 50%; }
+        .slider-game-time { font-size: 0.75rem; color: var(--dark-gray); }
+
+        /* --- Prop List Layout --- */
+        #props-container {
+            padding: 16px;
+            display: grid;
+            gap: 16px;
+        }
+        .prop-card {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid transparent; /* Team color */
+            overflow: hidden; 
+        }
+        .prop-main {
+            display: grid;
+            grid-template-columns: auto 1fr auto; 
             gap: 12px;
-            width: 100%;
+            align-items: center;
+            padding: 12px 16px;
+            color: white; 
         }
-        /* --- END NEW HIT RATE STYLES --- */
-
-        .stat-box { 
-            background-color: #ffffff; 
-            border-radius: 8px; 
-            padding: 12px; 
-            text-align: center; 
-            border: 1px solid #e9ecef; 
-            flex: 1; /* Allow boxes to grow and shrink evenly */
+        .prop-main .team-logo-list { width: 28px; height: 28px; border-radius: 50%; background-color: rgba(255,255,255,0.2); }
+        .prop-main .player-info { min-width: 0; }
+        .prop-main .player-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .prop-main .prop-line { font-size: 0.9rem; color: rgba(255,255,255,0.85); }
+        .prop-main .odds { font-weight: 700; color: white; text-align: right; font-size: 1.1rem; }
+        
+        .prop-details {
+            padding: 12px 16px 16px;
+            background-color: #f7f9fc;
+            border-top: 1px solid var(--light-gray);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        .stat-box .title { font-size: 0.8rem; font-weight: 700; color: #6c757d; margin-bottom: 8px; }
-        .stat-box .percentage { font-size: 1.7rem; font-weight: 700; line-height: 1; }
-        .stat-box.na .percentage { font-size: 1.1rem; color: #6c757d; }
-        .stat-box .fraction { font-size: 0.85rem; color: #6c757d; margin-top: 4px; }
+        .stats-row { display: flex; gap: 12px; }
+        .stats-row.top-row { justify-content: space-between; }
+        .stats-row.bottom-row { justify-content: center; width: 66%; margin: 0 auto; }
+        .detail-stat-box { text-align: center; flex: 1; }
+        .detail-stat-box .title { font-size: 0.8rem; font-weight: 500; color: var(--dark-gray); margin-bottom: 4px; white-space: nowrap; }
+        .detail-stat-box .percentage { font-size: 1.3rem; font-weight: 700; line-height: 1; }
+        .detail-stat-box .fraction { font-size: 0.8rem; color: var(--dark-gray); }
 
-        /* --- Mobile Optimization --- */
-        @media (max-width: 600px) {
-            body {
-                padding: 10px;
-            }
-            h1 {
-                font-size: 1.5rem;
-            }
-            .card-header {
-                gap: 10px;
-                padding: 12px 15px;
-            }
-            .header-right {
-                text-align: right;
-            }
-            .prop-details .player-name {
-                font-size: 1rem;
-            }
-            .prop-details .market-line {
-                font-size: 0.9rem;
-            }
-            .game-matchup, .game-time {
-                font-size: 0.8rem;
-            }
-            .hit-rates-row {
-                flex-wrap: wrap; /* Allow boxes to wrap on very small screens if needed */
-            }
-            .stat-box .percentage {
-                font-size: 1.4rem;
-            }
-            .top-controls {
-                flex-direction: column;
-            }
-            #player-search, #filter-button {
-                width: 100%;
-            }
-        }
-
+        /* --- Filter Bottom Sheet --- */
+        .bottom-sheet-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; transition: opacity 0.3s ease; }
+        .bottom-sheet-overlay.visible { display: flex; opacity: 1; }
+        .bottom-sheet-content { background-color: var(--background-color); padding: 20px; width: 100%; max-width: 800px; border-radius: 16px 16px 0 0; transform: translateY(100%); transition: transform 0.3s ease; }
+        .bottom-sheet-overlay.visible .bottom-sheet-content { transform: translateY(0); }
+        .bottom-sheet-content h2 { margin-top: 0; }
+        .filter-group { margin-bottom: 20px; }
+        .filter-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .filter-group select, .filter-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--medium-gray); box-sizing: border-box; font-size: 1rem; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
+        .modal-actions button { flex-grow: 1; padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; font-size: 1rem; }
+        #apply-filters-btn { background-color: var(--primary-color); color: white; }
+        #reset-filters-btn { background-color: var(--light-gray); color: var(--text-color); }
+        
+        #message-container, #loading-indicator { text-align: center; padding: 40px; font-size: 1.1rem; color: var(--dark-gray); }
     </style>
 </head>
 <body>
 
     <div class="dashboard-container">
-        <h1>Prop Finder</h1>
-
-        <div class="top-controls">
-            <input type="text" id="player-search" placeholder="🔍 Search for a player...">
-            <button id="filter-button">Filters</button>
+        <div class="sticky-header">
+            <div class="header-main">
+                <h1>Prop Finder</h1>
+                <button id="toggle-controls-btn">
+                    <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6 1.41 1.41z"></path></svg>
+                </button>
+            </div>
+            <div class="controls-container" id="controls-container">
+                <div class="search-bar-container">
+                    <input type="text" id="player-search" placeholder="Search for a player...">
+                    <button id="filter-button">
+                        <svg viewBox="0 0 24 24"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"></path></svg>
+                    </button>
+                </div>
+                <div class="slider-container">
+                    <div id="market-slider"></div>
+                </div>
+                <div class="slider-container">
+                    <div id="game-slider"></div>
+                </div>
+            </div>
         </div>
+        
+        <div id="props-container"></div>
 
-        <div id="props-container">
-            <div id="message-container">Loading data...</div>
-        </div>
+        <div id="message-container">Loading data...</div>
+        <div id="loading-indicator"></div>
     </div>
 
-    <div class="modal-overlay" id="filter-modal">
-        <div class="modal-content">
-            <h2>Filters & Sorting</h2>
-            
+    <div class="bottom-sheet-overlay" id="filter-sheet">
+        <div class="bottom-sheet-content">
+            <h2>Advanced Filters</h2>
             <div class="filter-group">
                 <label for="sort-by">Sort By</label>
                 <select id="sort-by">
+                    <option value="last_7_price" selected>Last 7 & Price</option>
+                    <option value="average_hit_rate">Average Hit Rate</option>
+                    <option value="total_hits">Total Hits</option>
                     <option value="this_season">This Season</option>
                     <option value="price">Price</option>
                     <option value="last_season">Last Season</option>
                     <option value="last_3">Last 3</option>
                     <option value="last_5">Last 5</option>
                     <option value="last_7">Last 7</option>
-                    <option value="last_7_price" selected>Last 7 & Price</option>
-                    <option value="total_hits">Total Hits</option>
                 </select>
             </div>
-
             <div class="filter-group">
-                <label for="market-filter">Market Type</label>
-                <select id="market-filter">
-                    <option value="all">All Markets</option>
-                </select>
+                <label for="market-filter-modal">Market Type</label>
+                <select id="market-filter-modal"><option value="all">All Markets</option></select>
             </div>
-
-            <div class="filter-group">
+             <div class="filter-group">
                 <label for="hit-rate-category">Min Hit Rate (%)</label>
                 <div style="display: flex; gap: 10px;">
-                    <select id="hit-rate-category" style="width: 60%;">
-                        <option value="none">-- Select Category --</option>
-                        <option value="this_season">This Season</option>
-                        <option value="last_season">Last Season</option>
-                        <option value="last_3">Last 3</option>
-                        <option value="last_5">Last 5</option>
-                        <option value="last_7">Last 7</option>
-                    </select>
+                    <select id="hit-rate-category" style="width: 60%;"><option value="none">-- Select --</option><option value="this_season">This Season</option><option value="last_season">Last Season</option><option value="last_3">Last 3</option><option value="last_5">Last 5</option><option value="last_7">Last 7</option></select>
                     <input type="number" id="hit-rate-threshold" placeholder="e.g., 80" min="0" max="100" style="width: 40%;">
                 </div>
             </div>
-
             <div class="modal-actions">
                 <button id="reset-filters-btn">Reset</button>
                 <button id="apply-filters-btn">Apply</button>
@@ -288,315 +266,76 @@
     <script>
         document.addEventListener('DOMContentLoaded', async function () {
             
-            // --- NEW: Get the current time once when the page loads ---
             const currentTime = new Date();
 
-            // --- DOM ELEMENTS ---
             const propsContainer = document.getElementById('props-container');
             const messageContainer = document.getElementById('message-container');
             const searchInput = document.getElementById('player-search');
-            // ... (rest of DOM elements are the same)
+            const gameSlider = document.getElementById('game-slider');
+            const marketSlider = document.getElementById('market-slider');
+            const loadingIndicator = document.getElementById('loading-indicator');
             const filterButton = document.getElementById('filter-button');
-            const modal = document.getElementById('filter-modal');
+            const toggleControlsBtn = document.getElementById('toggle-controls-btn');
+            const controlsContainer = document.getElementById('controls-container');
+            const filterSheet = document.getElementById('filter-sheet');
             const applyFiltersBtn = document.getElementById('apply-filters-btn');
             const resetFiltersBtn = document.getElementById('reset-filters-btn');
             const sortBySelect = document.getElementById('sort-by');
-            const marketFilterSelect = document.getElementById('market-filter');
+            const marketFilterSelectModal = document.getElementById('market-filter-modal');
             const hitRateCategorySelect = document.getElementById('hit-rate-category');
             const hitRateThresholdInput = document.getElementById('hit-rate-threshold');
 
+            const teamData = { 'ARI': { color: '#97233F', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png' }, 'ATL': { color: '#A71930', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png' }, 'BAL': { color: '#241773', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png' }, 'BUF': { color: '#00338D', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png' }, 'CAR': { color: '#0085CA', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png' }, 'CHI': { color: '#0B162A', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png' }, 'CIN': { color: '#FB4F14', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png' }, 'CLE': { color: '#311D00', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png' }, 'DAL': { color: '#041E42', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png' }, 'DEN': { color: '#FB4F14', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png' }, 'DET': { color: '#0076B6', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png' }, 'GB': { color: '#203731', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png' }, 'HOU': { color: '#03202F', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png' }, 'IND': { color: '#002C5F', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png' }, 'JAX': { color: '#006778', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png' }, 'KC': { color: '#E31837', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png' }, 'LV': { color: '#000000', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png' }, 'LAC': { color: '#0080C6', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png' }, 'LAR': { color: '#003594', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png' }, 'MIA': { color: '#008E97', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png' }, 'MIN': { color: '#4F2683', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png' }, 'NE': { color: '#002244', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png' }, 'NO': { color: '#D3BC8D', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png' }, 'NYG': { color: '#0B2265', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png' }, 'NYJ': { color: '#125740', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png' }, 'PHI': { color: '#004C54', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png' }, 'PIT': { color: '#FFB612', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png' }, 'SF': { color: '#AA0000', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png' }, 'SEA': { color: '#69BE28', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png' }, 'TB': { color: '#D50A0A', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png' }, 'TEN': { color: '#4B92DB', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png' }, 'WAS': { color: '#5A1414', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/wsh.png' }, 'DEFAULT': { color: '#1A3D7D', logo: 'https://placehold.co/100x100/CCCCCC/FFFFFF?text=?' }};
 
-            // --- TEAM DATA MAP ---
-            const teamData = {
-                'ARI': { color: '#97233F', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png' },
-                'ATL': { color: '#A71930', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png' },
-                'BAL': { color: '#241773', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png' },
-                'BUF': { color: '#00338D', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png' },
-                'CAR': { color: '#0085CA', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png' },
-                'CHI': { color: '#0B162A', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png' },
-                'CIN': { color: '#FB4F14', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png' },
-                'CLE': { color: '#311D00', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png' },
-                'DAL': { color: '#041E42', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png' },
-                'DEN': { color: '#FB4F14', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png' },
-                'DET': { color: '#0076B6', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png' },
-                'GB': { color: '#203731', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png' },
-                'HOU': { color: '#03202F', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png' },
-                'IND': { color: '#002C5F', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png' },
-                'JAX': { color: '#006778', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png' },
-                'KC': { color: '#E31837', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png' },
-                'LV': { color: '#000000', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png' },
-                'LAC': { color: '#0080C6', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png' },
-                'LAR': { color: '#003594', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png' },
-                'MIA': { color: '#008E97', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png' },
-                'MIN': { color: '#4F2683', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png' },
-                'NE': { color: '#002244', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png' },
-                'NO': { color: '#D3BC8D', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png' },
-                'NYG': { color: '#0B2265', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png' },
-                'NYJ': { color: '#125740', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png' },
-                'PHI': { color: '#004C54', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png' },
-                'PIT': { color: '#FFB612', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png' },
-                'SF': { color: '#AA0000', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png' },
-                'SEA': { color: '#69BE28', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png' },
-                'TB': { color: '#D50A0A', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png' },
-                'TEN': { color: '#4B92DB', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png' },
-                'WAS': { color: '#5A1414', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/wsh.png' },
-                'DEFAULT': { color: '#1A3D7D', logo: 'https://placehold.co/100x100/CCCCCC/FFFFFF?text=?' }
-            };
-
-            let propsData = [];
-            let filters = {
-                searchTerm: '',
-                sortBy: 'last_7_price', 
-                market: 'all',
-                hitRate: {
-                    category: 'none',
-                    threshold: 0
-                }
-            };
+            let allPropsData = [];
+            let filteredAndSortedData = [];
+            const PROPS_PER_PAGE = 50;
+            let currentPage = 1;
+            let isLoading = false;
             
-            // --- MODIFIED: DATA FETCHING & PARSING FROM GIST ---
+            let filters = { sortBy: 'last_7_price', market: 'All', refinedMarket: 'all', hitRate: { category: 'none', threshold: 0 }, selectedTeams: null, searchTerm: '' };
+            
             async function loadCSVData() {
-                // !!! IMPORTANT: Replace this URL with the "Raw" URL of your Gist file
                 const gistRawUrl = 'https://gist.githubusercontent.com/tjchase34/1b0d5c961b90b5eda95cacd7a9fe0dc7/raw/data.csv';
-
                 try {
-                    const response = await fetch(gistRawUrl, { cache: "no-store" }); // Use no-store to always get the latest version
+                    const response = await fetch(gistRawUrl, { cache: "no-store" });
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                     const csvText = await response.text();
-                    
                     const rows = csvText.trim().replace(/\r\n/g, '\n').split('\n');
                     const headers = rows.shift().split(',').map(h => h.trim());
-
-                    return rows.map(rowStr => {
-                        const rowData = rowStr.split(',');
-                        const prop = {};
-                        
-                        headers.forEach((header, index) => {
-                            prop[header] = rowData[index] ? rowData[index].trim() : undefined;
-                        });
-                        
-                        return {
-                            market: prop.market,
-                            price: parseInt(prop.odds, 10),
-                            player: prop.player,
-                            team: prop.team || 'DEFAULT', 
-                            position: prop.position || 'POS',
-                            against: prop.against || 'OPP',
-                            game_time: prop.game_time,
-                            home_team: prop.home_team || 'HOME',
-                            away_team: prop.away_team || 'AWAY',
-                            decision: prop.decision,
-                            point: parseFloat(prop.point),
-                            this_season_played: parseInt(prop.this_season_played, 10),
-                            this_season_hit: parseInt(prop.this_season_hit, 10),
-                            last_3_played: parseInt(prop.last_3_played, 10),
-                            last_3_hit: parseInt(prop.last_3_hit, 10),
-                            last_5_played: parseInt(prop.last_5_played, 10),
-                            last_5_hit: parseInt(prop.last_5_hit, 10),
-                            last_7_played: parseInt(prop.last_7_played, 10),
-                            last_7_hit: parseInt(prop.last_7_hit, 10),
-                            last_season_played: parseInt(prop.last_season_played, 10),
-                            last_season_hit: parseInt(prop.last_season_hit, 10),
-                        };
+                    const rawData = rows.map(rowStr => {
+                        const rowData = rowStr.split(','); const prop = {};
+                        headers.forEach((header, index) => { prop[header] = rowData[index] ? rowData[index].trim() : undefined; });
+                        return { market: prop.market, price: parseInt(prop.odds, 10), player: prop.player, team: prop.team || 'DEFAULT', position: prop.position || 'POS', against: prop.against || 'OPP', game_time: prop.game_time, home_team: prop.home_team || 'HOME', away_team: prop.away_team || 'AWAY', decision: prop.decision, point: parseFloat(prop.point), this_season_played: parseInt(prop.this_season_played, 10), this_season_hit: parseInt(prop.this_season_hit, 10), last_3_played: parseInt(prop.last_3_played, 10), last_3_hit: parseInt(prop.last_3_hit, 10), last_5_played: parseInt(prop.last_5_played, 10), last_5_hit: parseInt(prop.last_5_hit, 10), last_7_played: parseInt(prop.last_7_played, 10), last_7_hit: parseInt(prop.last_7_hit, 10), last_season_played: parseInt(prop.last_season_played, 10), last_season_hit: parseInt(prop.last_season_hit, 10) };
                     });
+
+                    const uniqueProps = new Map();
+                    rawData.forEach(prop => {
+                        const marketDisplayName = getFormattedMarketName(prop.market);
+                        const uniqueId = `${prop.player}-${marketDisplayName}-${prop.point}-${prop.decision}`;
+                        if (!uniqueProps.has(uniqueId)) {
+                            uniqueProps.set(uniqueId, prop);
+                        }
+                    });
+                    return Array.from(uniqueProps.values());
+
                 } catch (error) {
                     console.error("Failed to load or parse data from Gist:", error);
-                    messageContainer.textContent = 'Error: Could not load data from the remote source.';
+                    messageContainer.textContent = 'Error: Could not load data.';
                     return [];
                 }
             }
             
-            // --- HELPER FUNCTIONS ---
             const getHitRate = (hit, played) => (isNaN(hit) || isNaN(played) || played === 0) ? -1 : hit / played;
-            const getTotalHits = (prop) => (prop.last_season_hit || 0) + (prop.last_3_hit || 0) + (prop.last_5_hit || 0) + (prop.last_7_hit || 0) + (prop.this_season_hit || 0);
-            
-            const formatGameTime = (timeString) => {
-                if (!timeString) return "Date TBD";
-                try {
-                    const date = new Date(timeString.replace(' ', 'T'));
-                    const dateOptions = { weekday: 'short' }; 
-                    const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-                    const formattedDay = date.toLocaleDateString('en-US', dateOptions).toUpperCase();
-                    const formattedTime = date.toLocaleTimeString('en-US', timeOptions);
-                    return `${formattedDay} @ ${formattedTime} ET`;
-                } catch (e) {
-                    console.error("Could not parse date:", timeString);
-                    return "Date TBD";
-                }
-            };
-
-            // --- FILTER & RENDER LOGIC ---
-            function applyFiltersAndRender() {
-                let filteredData = [...propsData];
-
-                // --- CHANGED: Filter out props for games that are in the past ---
-                filteredData = filteredData.filter(prop => {
-                    if (!prop.game_time) {
-                        return true; // Keep props that don't have a game time
-                    }
-                    // Create a Date object from the game_time string
-                    const gameTime = new Date(prop.game_time.replace(' ', 'T'));
-                    // Keep the prop only if its game time is in the future
-                    return !isNaN(gameTime.getTime()) && gameTime > currentTime;
-                });
-                
-                if (filters.searchTerm) {
-                    filteredData = filteredData.filter(prop => prop.player.toLowerCase().includes(filters.searchTerm));
-                }
-                if (filters.market !== 'all') {
-                    filteredData = filteredData.filter(prop => prop.market === filters.market);
-                }
-                if (filters.hitRate.category !== 'none' && filters.hitRate.threshold > 0) {
-                    filteredData = filteredData.filter(prop => {
-                        const cat = filters.hitRate.category;
-                        const rate = getHitRate(prop[`${cat}_hit`], prop[`${cat}_played`]);
-                        return rate * 100 >= filters.hitRate.threshold;
-                    });
-                }
-
-                sortData(filteredData, filters.sortBy);
-                renderProps(filteredData);
-            }
-
-            function sortData(dataArray, key) {
-                dataArray.sort((a, b) => {
-                    switch (key) {
-                        case 'price': return b.price - a.price;
-                        case 'total_hits': return getTotalHits(b) - getTotalHits(a);
-                        case 'last_season': return getHitRate(b.last_season_hit, b.last_season_played) - getHitRate(a.last_season_hit, a.last_season_played);
-                        case 'last_3': return getHitRate(b.last_3_hit, b.last_3_played) - getHitRate(a.last_3_hit, a.last_3_played);
-                        case 'last_5': return getHitRate(b.last_5_hit, b.last_5_played) - getHitRate(a.last_5_hit, a.last_5_played);
-                        case 'last_7': return getHitRate(b.last_7_hit, b.last_7_played) - getHitRate(a.last_7_hit, a.last_7_played);
-                        case 'last_7_price':
-                            const last7Compare = getHitRate(b.last_7_hit, b.last_7_played) - getHitRate(a.last_7_hit, a.last_7_played);
-                            if (last7Compare !== 0) return last7Compare;
-                            return b.price - a.price;
-                        default: return getHitRate(b.this_season_hit, b.this_season_played) - getHitRate(a.this_season_hit, a.this_season_played);
-                    }
-                });
-            }
-
-            function renderProps(dataToRender) {
-                propsContainer.innerHTML = '';
-                if (dataToRender.length === 0) {
-                    messageContainer.textContent = 'No props match your criteria.';
-                    messageContainer.style.display = 'block';
-                    return;
-                }
-                messageContainer.style.display = 'none';
-
-                dataToRender.forEach(prop => {
-                    const card = document.createElement('div');
-                    card.className = 'prop-card';
-                    const formattedPrice = prop.price > 0 ? `+${prop.price}` : prop.price;
-                    const formattedDecision = prop.decision.charAt(0).toUpperCase() + prop.decision.slice(1);
-                    const formattedMarket = getFormattedMarketName(prop.market);
-                    const marketLineText = prop.market.includes('anytime_td') ? formattedMarket : `${formattedDecision} ${prop.point} ${formattedMarket}`;
-                    
-                    const team = teamData[prop.team] || teamData['DEFAULT'];
-                    const formattedGameTime = formatGameTime(prop.game_time);
-
-                    card.innerHTML = `
-                        <div class="card-header" style="background-color: ${team.color};">
-                            <div class="header-left">
-                                <div class="team-logo"><img src="${team.logo}" alt="${prop.team} Logo"></div>
-                                <div class="prop-details">
-                                    <div class="player-line"><span class="player-name">${prop.player}</span><span class="player-position">${prop.position}</span></div>
-                                    <div class="market-line">${marketLineText}</div>
-                                </div>
-                            </div>
-                            <div class="header-right">
-                                <div class="game-matchup">${prop.home_team} @ ${prop.away_team}</div>
-                                <div class="game-time">${formattedGameTime}</div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="card-body-header">
-                                <h3 class="body-title">📊 HIT RATES</h3>
-                                <div class="price-info">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/94/FanDuel_Sports_Network_logo.svg" alt="FanDuel Logo" class="sportsbook-logo">
-                                    <span class="price-value">${formattedPrice}</span>
-                                </div>
-                            </div>
-                            <div class="hit-rates-container">
-                                <div class="hit-rates-row">
-                                    ${createStatBoxHTML('Last 3', prop.last_3_hit, prop.last_3_played)}
-                                    ${createStatBoxHTML('Last 5', prop.last_5_hit, prop.last_5_played)}
-                                    ${createStatBoxHTML('Last 7', prop.last_7_hit, prop.last_7_played)}
-                                </div>
-                                <div class="hit-rates-row">
-                                    ${createStatBoxHTML('Last Season', prop.last_season_hit, prop.last_season_played)}
-                                    ${createStatBoxHTML('This Season', prop.this_season_hit, prop.this_season_played)}
-                                </div>
-                            </div>
-                        </div>`;
-                    propsContainer.appendChild(card);
-                });
-            }
             
             const getFormattedMarketName = (market) => {
-                const cleanMarket = market.replace('_over', '').replace('_under', '');
-                switch (cleanMarket) {
-                    case 'player_anytime_td': return 'Anytime Touchdown';
-                    case 'player_pass_yds': return 'Passing Yards';
-                    case 'player_rec_yds': return 'Receiving Yards';
-                    case 'player_tds': return 'Touchdowns';
-                    default: return market.split('_').filter(w => !['player', 'over', 'under'].includes(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                }
+                if (!market) return '';
+                const marketMappings = [ { keywords: ['rush_rec_yds', 'rush_reception_yds'], name: 'Rushing + Receiving Yards' }, { keywords: ['pass_yds'], name: 'Passing Yards' }, { keywords: ['rec_yds', 'reception_yds'], name: 'Receiving Yards' }, { keywords: ['rush_yds'], name: 'Rushing Yards' }, { keywords: ['anytime_td'], name: 'Anytime Touchdown' }, { keywords: ['tds'], name: 'Touchdowns' }, { keywords: ['rec_longest', 'reception_longest'], name: 'Longest Reception' }, { keywords: ['receptions'], name: 'Receptions' }, { keywords: ['rush_attempts'], name: 'Rush Attempts' }, { keywords: ['rush_longest'], name: 'Longest Rush' } ];
+                for (const mapping of marketMappings) { if (mapping.keywords.some(keyword => market.includes(keyword))) { return mapping.name; } }
+                let fallbackName = market.replace(/player_|alternate_|_over|_under/g, '').replace(/_/g, ' ');
+                return fallbackName.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             };
 
-            const createStatBoxHTML = (title, hit, played) => {
-                if (isNaN(hit) || isNaN(played)) return `<div class="stat-box na"><div class="title">${title}</div><div class="percentage">N/A</div><div class="fraction">No Data</div></div>`;
-                const percentage = played > 0 ? Math.round((hit / played) * 100) : 0;
-                return `<div class="stat-box"><div class="title">${title}</div><div class="percentage">${percentage}%</div><div class="fraction">${hit}/${played}</div></div>`;
-            };
-            
-            // --- EVENT LISTENERS ---
-            filterButton.addEventListener('click', () => modal.style.display = 'flex');
-            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-            
-            applyFiltersBtn.addEventListener('click', () => {
-                filters.sortBy = sortBySelect.value;
-                filters.market = marketFilterSelect.value;
-                filters.hitRate.category = hitRateCategorySelect.value;
-                filters.hitRate.threshold = parseInt(hitRateThresholdInput.value, 10) || 0;
-                applyFiltersAndRender();
-                modal.style.display = 'none';
-            });
-            
-            resetFiltersBtn.addEventListener('click', () => {
-                filters = { searchTerm: searchInput.value, sortBy: 'last_7_price', market: 'all', hitRate: { category: 'none', threshold: 0 }};
-                sortBySelect.value = 'last_7_price';
-                marketFilterSelect.value = 'all';
-                hitRateCategorySelect.value = 'none';
-                hitRateThresholdInput.value = '';
-                applyFiltersAndRender();
-                modal.style.display = 'none';
-            });
-
-            searchInput.addEventListener('input', (e) => {
-                filters.searchTerm = e.target.value.toLowerCase();
-                applyFiltersAndRender();
-            });
-
-            // --- INITIALIZATION ---
-            async function initialize() {
-                // Populate the dropdowns in the filter modal first
-                const markets = [...new Set(propsData.map(p => p.market))];
-                markets.forEach(market => {
-                    const option = document.createElement('option');
-                    option.value = market;
-                    option.textContent = getFormattedMarketName(market);
-                    marketFilterSelect.appendChild(option);
-                });
-                
-                // Render the initial view using the default filters (which now includes the new sort)
-                applyFiltersAndRender();
-            }
-
-            propsData = await loadCSVData();
-            initialize();
-        });
-    </script>
-</body>
-</html>
+            const marketChipMapping = {
+                'All': ['All'],
+                'Pass': ['Passing Yards'
