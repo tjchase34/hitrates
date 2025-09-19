@@ -51,13 +51,24 @@
         }
         #toggle-controls-btn {
             background: none;
-            border: none;
+            border: 1px solid var(--medium-gray);
+            border-radius: 20px;
             cursor: pointer;
-            padding: 8px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            transition: background-color 0.2s;
+        }
+        #toggle-controls-btn:hover {
+            background-color: #eef2ff;
         }
         #toggle-controls-btn svg {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             fill: var(--primary-color);
             transition: transform 0.3s ease;
         }
@@ -66,7 +77,7 @@
         }
 
         .controls-container {
-            max-height: 500px; /* Arbitrary large height */
+            max-height: 500px;
             overflow: hidden;
             padding: 0 16px 12px 16px;
             transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out;
@@ -76,13 +87,15 @@
             padding-top: 0;
             padding-bottom: 0;
         }
-        .search-bar-container {
-            position: relative;
+        .search-filter-row {
+            display: flex;
+            gap: 10px;
             margin-bottom: 12px;
+            align-items: center;
         }
         #player-search {
-            width: 100%;
-            padding: 12px 48px 12px 16px; 
+            flex-grow: 1;
+            padding: 12px 16px; 
             border-radius: 10px;
             border: 1px solid var(--medium-gray);
             font-size: 1rem;
@@ -90,19 +103,20 @@
             -webkit-appearance: none;
         }
         #filter-button {
-            position: absolute;
-            right: 4px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none; 
+            flex-shrink: 0;
+            background-color: var(--primary-color); 
             border: none; 
             cursor: pointer; 
-            padding: 8px;
+            padding: 10px 16px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: white;
+            font-weight: 500;
+            gap: 6px;
         }
-        #filter-button svg { width: 24px; height: 24px; fill: var(--primary-color); }
+        #filter-button svg { width: 20px; height: 20px; fill: white; }
 
         .slider-container {
             overflow-x: auto;
@@ -159,8 +173,26 @@
         }
         .prop-main .team-logo-list { width: 28px; height: 28px; border-radius: 50%; background-color: rgba(255,255,255,0.2); }
         .prop-main .player-info { min-width: 0; }
-        .prop-main .player-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .prop-main .prop-line { font-size: 0.9rem; color: rgba(255,255,255,0.85); }
+        .prop-main .player-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+        }
+        .prop-main .player-name-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .prop-main .player-position {
+            font-size: 0.8rem;
+            font-weight: 500;
+            background-color: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .prop-main .prop-line { font-size: 0.9rem; color: rgba(255,255,255,0.85); margin-top: 2px; }
         .prop-main .odds { font-weight: 700; color: white; text-align: right; font-size: 1.1rem; }
         
         .prop-details {
@@ -179,15 +211,17 @@
         .detail-stat-box .percentage { font-size: 1.3rem; font-weight: 700; line-height: 1; }
         .detail-stat-box .fraction { font-size: 0.8rem; color: var(--dark-gray); }
 
-        /* --- Filter Bottom Sheet --- */
-        .bottom-sheet-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; transition: opacity 0.3s ease; }
-        .bottom-sheet-overlay.visible { display: flex; opacity: 1; }
-        .bottom-sheet-content { background-color: var(--background-color); padding: 20px; width: 100%; max-width: 800px; border-radius: 16px 16px 0 0; transform: translateY(100%); transition: transform 0.3s ease; }
-        .bottom-sheet-overlay.visible .bottom-sheet-content { transform: translateY(0); }
-        .bottom-sheet-content h2 { margin-top: 0; }
+        /* --- Filter Modal --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: opacity 0.3s ease; padding: 16px; box-sizing: border-box; }
+        .modal-overlay.visible { display: flex; opacity: 1; }
+        .modal-content { background-color: var(--background-color); padding: 24px; width: 100%; max-width: 450px; border-radius: 16px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); transform: scale(0.95); transition: transform 0.3s ease; }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .modal-content h2 { margin-top: 0; }
         .filter-group { margin-bottom: 20px; }
         .filter-group label { display: block; margin-bottom: 8px; font-weight: 500; }
         .filter-group select, .filter-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--medium-gray); box-sizing: border-box; font-size: 1rem; }
+        .sort-group { display: flex; gap: 10px; }
+        .sort-group > div { flex: 1; }
         .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
         .modal-actions button { flex-grow: 1; padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; font-size: 1rem; }
         #apply-filters-btn { background-color: var(--primary-color); color: white; }
@@ -202,15 +236,17 @@
         <div class="sticky-header">
             <div class="header-main">
                 <h1>Prop Finder</h1>
-                <button id="toggle-controls-btn">
+                <button id="toggle-controls-btn" class="collapsed">
+                    <span>Filters</span>
                     <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6 1.41 1.41z"></path></svg>
                 </button>
             </div>
-            <div class="controls-container" id="controls-container">
-                <div class="search-bar-container">
+            <div class="controls-container hidden" id="controls-container">
+                <div class="search-filter-row">
                     <input type="text" id="player-search" placeholder="Search for a player...">
                     <button id="filter-button">
                         <svg viewBox="0 0 24 24"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"></path></svg>
+                        <span>More</span>
                     </button>
                 </div>
                 <div class="slider-container">
@@ -228,22 +264,39 @@
         <div id="loading-indicator"></div>
     </div>
 
-    <div class="bottom-sheet-overlay" id="filter-sheet">
-        <div class="bottom-sheet-content">
+    <div class="modal-overlay" id="filter-modal">
+        <div class="modal-content">
             <h2>Advanced Filters</h2>
             <div class="filter-group">
-                <label for="sort-by">Sort By</label>
-                <select id="sort-by">
-                    <option value="last_7_price" selected>Last 7 & Price</option>
-                    <option value="average_hit_rate">Average Hit Rate</option>
-                    <option value="total_hits">Total Hits</option>
-                    <option value="this_season">This Season</option>
-                    <option value="price">Price</option>
-                    <option value="last_season">Last Season</option>
-                    <option value="last_3">Last 3</option>
-                    <option value="last_5">Last 5</option>
-                    <option value="last_7">Last 7</option>
-                </select>
+                 <div class="sort-group">
+                    <div>
+                        <label for="primary-sort">Sort By</label>
+                        <select id="primary-sort">
+                            <option value="last_3">Last 3</option>
+                            <option value="last_5">Last 5</option>
+                            <option value="last_7" selected>Last 7</option>
+                            <option value="this_season">This Season</option>
+                            <option value="last_season">Last Season</option>
+                            <option value="average_hit_rate">Average Hit Rate</option>
+                            <option value="total_hits">Total Hits</option>
+                            <option value="price">Price</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="secondary-sort">Then By</label>
+                         <select id="secondary-sort">
+                            <option value="none">None</option>
+                            <option value="last_3">Last 3</option>
+                            <option value="last_5">Last 5</option>
+                            <option value="last_7">Last 7</option>
+                            <option value="this_season">This Season</option>
+                            <option value="last_season">Last Season</option>
+                            <option value="average_hit_rate">Average Hit Rate</option>
+                            <option value="total_hits">Total Hits</option>
+                            <option value="price" selected>Price</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div class="filter-group">
                 <label for="market-filter-modal">Market Type</label>
@@ -277,10 +330,11 @@
             const filterButton = document.getElementById('filter-button');
             const toggleControlsBtn = document.getElementById('toggle-controls-btn');
             const controlsContainer = document.getElementById('controls-container');
-            const filterSheet = document.getElementById('filter-sheet');
+            const filterModal = document.getElementById('filter-modal');
             const applyFiltersBtn = document.getElementById('apply-filters-btn');
             const resetFiltersBtn = document.getElementById('reset-filters-btn');
-            const sortBySelect = document.getElementById('sort-by');
+            const primarySortSelect = document.getElementById('primary-sort');
+            const secondarySortSelect = document.getElementById('secondary-sort');
             const marketFilterSelectModal = document.getElementById('market-filter-modal');
             const hitRateCategorySelect = document.getElementById('hit-rate-category');
             const hitRateThresholdInput = document.getElementById('hit-rate-threshold');
@@ -293,15 +347,11 @@
             let currentPage = 1;
             let isLoading = false;
             
-            let filters = { sortBy: 'last_7_price', market: 'All', refinedMarket: 'all', hitRate: { category: 'none', threshold: 0 }, selectedTeams: null, searchTerm: '' };
+            let filters = { sortBy: { primary: 'last_7', secondary: 'price' }, market: 'All', refinedMarket: 'all', hitRate: { category: 'none', threshold: 0 }, selectedTeams: null, searchTerm: '' };
             
             async function loadCSVData() {
                 const gistRawUrl = 'https://gist.githubusercontent.com/tjchase34/1b0d5c961b90b5eda95cacd7a9fe0dc7/raw/data.csv';
                 try {
-                    // --- MODIFIED FOR GITHUB PAGES ---
-                    // Added { cache: "no-store" } to the fetch request.
-                    // This prevents the browser and GitHub's servers from using a cached (old) version of your data.csv file.
-                    // It forces a fresh download every time the page loads, ensuring you always get the latest data from your Gist.
                     const response = await fetch(gistRawUrl, { cache: "no-store" });
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                     const csvText = await response.text();
@@ -313,7 +363,6 @@
                         return { market: prop.market, price: parseInt(prop.odds, 10), player: prop.player, team: prop.team || 'DEFAULT', position: prop.position || 'POS', against: prop.against || 'OPP', game_time: prop.game_time, home_team: prop.home_team || 'HOME', away_team: prop.away_team || 'AWAY', decision: prop.decision, point: parseFloat(prop.point), this_season_played: parseInt(prop.this_season_played, 10), this_season_hit: parseInt(prop.this_season_hit, 10), last_3_played: parseInt(prop.last_3_played, 10), last_3_hit: parseInt(prop.last_3_hit, 10), last_5_played: parseInt(prop.last_5_played, 10), last_5_hit: parseInt(prop.last_5_hit, 10), last_7_played: parseInt(prop.last_7_played, 10), last_7_hit: parseInt(prop.last_7_hit, 10), last_season_played: parseInt(prop.last_season_played, 10), last_season_hit: parseInt(prop.last_season_hit, 10) };
                     });
 
-                    // --- DEDUPLICATION LOGIC ---
                     const uniqueProps = new Map();
                     rawData.forEach(prop => {
                         const marketDisplayName = getFormattedMarketName(prop.market);
@@ -401,22 +450,28 @@
                 loadMoreProps();
             }
 
-            function sortData(dataArray, key) {
+            const getSortValue = (prop, key) => {
+                 switch (key) {
+                    case 'price': return prop.price;
+                    case 'total_hits': return getTotal(prop, 'hit');
+                    case 'average_hit_rate': return getAverageHitRate(prop);
+                    case 'last_season': return getHitRate(prop.last_season_hit, prop.last_season_played);
+                    case 'this_season': return getHitRate(prop.this_season_hit, prop.this_season_played);
+                    case 'last_3': return getHitRate(prop.last_3_hit, prop.last_3_played);
+                    case 'last_5': return getHitRate(prop.last_5_hit, prop.last_5_played);
+                    case 'last_7': return getHitRate(prop.last_7_hit, prop.last_7_played);
+                    default: return -1;
+                }
+            }
+
+            function sortData(dataArray, sortBy) {
                 dataArray.sort((a, b) => {
-                    switch (key) {
-                        case 'price': return b.price - a.price;
-                        case 'total_hits': return getTotal(b, 'hit') - getTotal(a, 'hit');
-                        case 'average_hit_rate': return getAverageHitRate(b) - getAverageHitRate(a);
-                        case 'last_season': return getHitRate(b.last_season_hit, b.last_season_played) - getHitRate(a.last_season_hit, a.last_season_played);
-                        case 'last_3': return getHitRate(b.last_3_hit, b.last_3_played) - getHitRate(a.last_3_hit, a.last_3_played);
-                        case 'last_5': return getHitRate(b.last_5_hit, b.last_5_played) - getHitRate(a.last_5_hit, a.last_5_played);
-                        case 'last_7': return getHitRate(b.last_7_hit, b.last_7_played) - getHitRate(a.last_7_hit, a.last_7_played);
-                        case 'last_7_price':
-                            const last7Compare = getHitRate(b.last_7_hit, b.last_7_played) - getHitRate(a.last_7_hit, a.last_7_played);
-                            if (last7Compare !== 0) return last7Compare;
-                            return b.price - a.price;
-                        default: return getHitRate(b.this_season_hit, b.this_season_played) - getHitRate(a.this_season_hit, a.this_season_played);
+                    const primaryCompare = getSortValue(b, sortBy.primary) - getSortValue(a, sortBy.primary);
+                    if (primaryCompare !== 0) return primaryCompare;
+                    if (sortBy.secondary && sortBy.secondary !== 'none') {
+                        return getSortValue(b, sortBy.secondary) - getSortValue(a, sortBy.secondary);
                     }
+                    return 0;
                 });
             }
 
@@ -501,7 +556,10 @@
                         <div class="prop-main">
                             <img src="${team.logo}" alt="${prop.team}" class="team-logo-list">
                             <div class="player-info">
-                                <div class="player-name">${prop.player}</div>
+                                <div class="player-name">
+                                    <span class="player-name-text">${prop.player}</span>
+                                    <span class="player-position">${prop.position}</span>
+                                </div>
                                 <div class="prop-line">${marketLineText}</div>
                             </div>
                             <div class="odds">${formattedPrice}</div>
@@ -534,8 +592,8 @@
             };
             
             // --- Event Listeners ---
-            filterButton.addEventListener('click', () => filterSheet.classList.add('visible'));
-            filterSheet.addEventListener('click', (e) => { if (e.target === filterSheet) filterSheet.classList.remove('visible'); });
+            filterButton.addEventListener('click', () => filterModal.classList.add('visible'));
+            filterModal.addEventListener('click', (e) => { if (e.target === filterModal) filterModal.classList.remove('visible'); });
             
             toggleControlsBtn.addEventListener('click', () => {
                 controlsContainer.classList.toggle('hidden');
@@ -543,25 +601,27 @@
             });
 
             applyFiltersBtn.addEventListener('click', () => {
-                filters.sortBy = sortBySelect.value;
+                filters.sortBy.primary = primarySortSelect.value;
+                filters.sortBy.secondary = secondarySortSelect.value;
                 filters.refinedMarket = marketFilterSelectModal.value;
                 filters.hitRate.category = hitRateCategorySelect.value;
                 filters.hitRate.threshold = parseInt(hitRateThresholdInput.value, 10) || 0;
-                filterSheet.classList.remove('visible');
+                filterModal.classList.remove('visible');
                 applyFiltersAndRender();
             });
             
             resetFiltersBtn.addEventListener('click', () => {
-                filters = { sortBy: 'last_7_price', market: 'All', refinedMarket: 'all', hitRate: { category: 'none', threshold: 0 }, selectedTeams: null, searchTerm: '' };
+                filters = { sortBy: { primary: 'last_7', secondary: 'price' }, market: 'All', refinedMarket: 'all', hitRate: { category: 'none', threshold: 0 }, selectedTeams: null, searchTerm: '' };
                 searchInput.value = '';
-                sortBySelect.value = 'last_7_price';
+                primarySortSelect.value = 'last_7';
+                secondarySortSelect.value = 'price';
                 marketFilterSelectModal.value = 'all';
                 hitRateCategorySelect.value = 'none';
                 hitRateThresholdInput.value = '';
                 document.querySelectorAll('.slider-chip.active').forEach(c => c.classList.remove('active'));
                 gameSlider.querySelector('.slider-chip').classList.add('active');
                 marketSlider.querySelector('.slider-chip').classList.add('active');
-                filterSheet.classList.remove('visible');
+                filterModal.classList.remove('visible');
                 applyFiltersAndRender();
             });
 
@@ -616,5 +676,4 @@
     </script>
 </body>
 </html>
-
 
