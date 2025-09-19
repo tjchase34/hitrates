@@ -298,6 +298,10 @@
             async function loadCSVData() {
                 const gistRawUrl = 'https://gist.githubusercontent.com/tjchase34/1b0d5c961b90b5eda95cacd7a9fe0dc7/raw/data.csv';
                 try {
+                    // --- MODIFIED FOR GITHUB PAGES ---
+                    // Added { cache: "no-store" } to the fetch request.
+                    // This prevents the browser and GitHub's servers from using a cached (old) version of your data.csv file.
+                    // It forces a fresh download every time the page loads, ensuring you always get the latest data from your Gist.
                     const response = await fetch(gistRawUrl, { cache: "no-store" });
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                     const csvText = await response.text();
@@ -309,6 +313,7 @@
                         return { market: prop.market, price: parseInt(prop.odds, 10), player: prop.player, team: prop.team || 'DEFAULT', position: prop.position || 'POS', against: prop.against || 'OPP', game_time: prop.game_time, home_team: prop.home_team || 'HOME', away_team: prop.away_team || 'AWAY', decision: prop.decision, point: parseFloat(prop.point), this_season_played: parseInt(prop.this_season_played, 10), this_season_hit: parseInt(prop.this_season_hit, 10), last_3_played: parseInt(prop.last_3_played, 10), last_3_hit: parseInt(prop.last_3_hit, 10), last_5_played: parseInt(prop.last_5_played, 10), last_5_hit: parseInt(prop.last_5_hit, 10), last_7_played: parseInt(prop.last_7_played, 10), last_7_hit: parseInt(prop.last_7_hit, 10), last_season_played: parseInt(prop.last_season_played, 10), last_season_hit: parseInt(prop.last_season_hit, 10) };
                     });
 
+                    // --- DEDUPLICATION LOGIC ---
                     const uniqueProps = new Map();
                     rawData.forEach(prop => {
                         const marketDisplayName = getFormattedMarketName(prop.market);
@@ -338,4 +343,278 @@
 
             const marketChipMapping = {
                 'All': ['All'],
-                'Pass': ['Passing Yards'
+                'Pass': ['Passing Yards'],
+                'Rush': ['Rushing Yards', 'Rush Attempts', 'Longest Rush', 'Rushing + Receiving Yards'],
+                'Rec': ['Receiving Yards', 'Receptions', 'Longest Reception', 'Rushing + Receiving Yards'],
+                'TD': ['Anytime Touchdown', 'Touchdowns']
+            };
+            
+            const getTotal = (prop, type) => (prop[`last_3_${type}`] || 0) + (prop[`last_5_${type}`] || 0) + (prop[`last_7_${type}`] || 0) + (prop[`this_season_${type}`] || 0) + (prop[`last_season_${type}`] || 0);
+            const getAverageHitRate = (prop) => {
+                const totalHits = getTotal(prop, 'hit');
+                const totalPlayed = getTotal(prop, 'played');
+                return totalPlayed > 0 ? totalHits / totalPlayed : -1;
+            };
+
+            function applyFiltersAndRender() {
+                let filteredData = [...allPropsData];
+                filteredData = filteredData.filter(prop => {
+                    if (!prop.game_time) return true;
+                    const gameTime = new Date(prop.game_time.replace(' ', 'T'));
+                    return !isNaN(gameTime.getTime()) && gameTime > currentTime;
+                });
+
+                if (filters.selectedTeams) {
+                    filteredData = filteredData.filter(prop => filters.selectedTeams.includes(prop.team));
+                }
+
+                if (filters.searchTerm) {
+                    filteredData = filteredData.filter(prop => prop.player.toLowerCase().includes(filters.searchTerm));
+                }
+
+                if (filters.market !== 'All') {
+                    const allowedMarkets = marketChipMapping[filters.market];
+                    if(allowedMarkets) {
+                        filteredData = filteredData.filter(prop => {
+                            const formattedName = getFormattedMarketName(prop.market);
+                            return allowedMarkets.includes(formattedName);
+                        });
+                    }
+                }
+                
+                if (filters.refinedMarket !== 'all') {
+                    filteredData = filteredData.filter(prop => getFormattedMarketName(prop.market) === filters.refinedMarket);
+                }
+                
+                if (filters.hitRate.category !== 'none' && filters.hitRate.threshold > 0) {
+                    filteredData = filteredData.filter(prop => {
+                        const rate = getHitRate(prop[`${filters.hitRate.category}_hit`], prop[`${filters.hitRate.category}_played`]);
+                        return rate * 100 >= filters.hitRate.threshold;
+                    });
+                }
+                
+                sortData(filteredData, filters.sortBy);
+                filteredAndSortedData = filteredData;
+                currentPage = 1;
+                propsContainer.innerHTML = '';
+                messageContainer.style.display = 'none';
+                loadMoreProps();
+            }
+
+            function sortData(dataArray, key) {
+                dataArray.sort((a, b) => {
+                    switch (key) {
+                        case 'price': return b.price - a.price;
+                        case 'total_hits': return getTotal(b, 'hit') - getTotal(a, 'hit');
+                        case 'average_hit_rate': return getAverageHitRate(b) - getAverageHitRate(a);
+                        case 'last_season': return getHitRate(b.last_season_hit, b.last_season_played) - getHitRate(a.last_season_hit, a.last_season_played);
+                        case 'last_3': return getHitRate(b.last_3_hit, b.last_3_played) - getHitRate(a.last_3_hit, a.last_3_played);
+                        case 'last_5': return getHitRate(b.last_5_hit, b.last_5_played) - getHitRate(a.last_5_hit, a.last_5_played);
+                        case 'last_7': return getHitRate(b.last_7_hit, b.last_7_played) - getHitRate(a.last_7_hit, a.last_7_played);
+                        case 'last_7_price':
+                            const last7Compare = getHitRate(b.last_7_hit, b.last_7_played) - getHitRate(a.last_7_hit, a.last_7_played);
+                            if (last7Compare !== 0) return last7Compare;
+                            return b.price - a.price;
+                        default: return getHitRate(b.this_season_hit, b.this_season_played) - getHitRate(a.this_season_hit, a.this_season_played);
+                    }
+                });
+            }
+
+            function loadMoreProps() {
+                if (isLoading) return;
+                isLoading = true;
+                const start = (currentPage - 1) * PROPS_PER_PAGE;
+                const end = start + PROPS_PER_PAGE;
+                const dataToRender = filteredAndSortedData.slice(start, end);
+                
+                if (currentPage === 1 && dataToRender.length === 0) {
+                    propsContainer.innerHTML = '';
+                    messageContainer.textContent = 'No props match your criteria.';
+                    messageContainer.style.display = 'block';
+                }
+                
+                appendPropsToDOM(dataToRender);
+                currentPage++;
+                const hasMore = end < filteredAndSortedData.length;
+                loadingIndicator.textContent = hasMore ? '' : 'End of results.';
+                isLoading = false;
+            }
+
+            function renderGameSlider(data) {
+                gameSlider.innerHTML = '';
+                const upcomingGames = data.filter(prop => prop.game_time && new Date(prop.game_time.replace(' ', 'T')) > currentTime);
+                const uniqueGames = [...new Map(upcomingGames.map(item => [`${item.home_team}-${item.away_team}`, item])).values()];
+                
+                const allButton = document.createElement('div');
+                allButton.className = 'slider-chip active';
+                allButton.dataset.teams = 'all';
+                allButton.innerHTML = '<span>All Players</span>';
+                gameSlider.appendChild(allButton);
+                
+                uniqueGames.forEach(game => {
+                    const card = document.createElement('div');
+                    card.className = 'slider-chip';
+                    card.dataset.teams = `${game.home_team},${game.away_team}`;
+                    const homeTeam = teamData[game.home_team] || teamData['DEFAULT'];
+                    const awayTeam = teamData[game.away_team] || teamData['DEFAULT'];
+                    const time = new Date(game.game_time.replace(' ', 'T'));
+                    const timeString = time.toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: true }).replace(',', '');
+
+                    card.innerHTML = `
+                        <div class="slider-matchup">
+                            <img src="${awayTeam.logo}" alt="${game.away_team}" class="team-logo-slider">
+                            <span>@</span>
+                            <img src="${homeTeam.logo}" alt="${game.home_team}" class="team-logo-slider">
+                        </div>
+                        <div class="slider-game-time">${timeString}</div>
+                    `;
+                    gameSlider.appendChild(card);
+                });
+            }
+
+            function renderMarketChips() {
+                marketSlider.innerHTML = '';
+                Object.keys(marketChipMapping).forEach(marketKey => {
+                    const chip = document.createElement('div');
+                    chip.className = 'slider-chip';
+                    if (marketKey === 'All') chip.classList.add('active');
+                    chip.dataset.market = marketKey;
+                    chip.textContent = marketKey;
+                    marketSlider.appendChild(chip);
+                });
+            }
+
+            function appendPropsToDOM(dataToAppend) {
+                const fragment = document.createDocumentFragment();
+                dataToAppend.forEach(prop => {
+                    const card = document.createElement('div');
+                    card.className = 'prop-card';
+
+                    const team = teamData[prop.team] || teamData['DEFAULT'];
+                    card.style.borderLeftColor = team.color;
+
+                    const formattedPrice = prop.price > 0 ? `+${prop.price}` : prop.price;
+                    const marketDisplayName = getFormattedMarketName(prop.market);
+                    const marketLineText = prop.market.includes('anytime_td') ? marketDisplayName : `${prop.decision.slice(0,1)} ${prop.point} ${marketDisplayName}`;
+
+                    card.innerHTML = `
+                        <div class="prop-main">
+                            <img src="${team.logo}" alt="${prop.team}" class="team-logo-list">
+                            <div class="player-info">
+                                <div class="player-name">${prop.player}</div>
+                                <div class="prop-line">${marketLineText}</div>
+                            </div>
+                            <div class="odds">${formattedPrice}</div>
+                        </div>
+                        <div class="prop-details">
+                            <div class="stats-row top-row">
+                                ${createDetailStatBoxHTML('Last 3', prop.last_3_hit, prop.last_3_played)}
+                                ${createDetailStatBoxHTML('Last 5', prop.last_5_hit, prop.last_5_played)}
+                                ${createDetailStatBoxHTML('Last 7', prop.last_7_hit, prop.last_7_played)}
+                            </div>
+                            <div class="stats-row bottom-row">
+                                ${createDetailStatBoxHTML('Last Season', prop.last_season_hit, prop.last_season_played)}
+                                ${createDetailStatBoxHTML('This Season', prop.this_season_hit, prop.this_season_played)}
+                            </div>
+                        </div>
+                    `;
+
+                    const propMain = card.querySelector('.prop-main');
+                    propMain.style.backgroundColor = team.color;
+                    
+                    fragment.appendChild(card);
+                });
+                propsContainer.appendChild(fragment);
+            }
+            
+            const createDetailStatBoxHTML = (title, hit, played) => {
+                if (isNaN(hit) || isNaN(played) || played === 0) return `<div class="detail-stat-box"><div class="title">${title}</div><div class="percentage">N/A</div><div class="fraction">-/-</div></div>`;
+                const percentage = Math.round((hit / played) * 100);
+                return `<div class="detail-stat-box"><div class="title">${title}</div><div class="percentage">${percentage}%</div><div class="fraction">${hit}/${played}</div></div>`;
+            };
+            
+            // --- Event Listeners ---
+            filterButton.addEventListener('click', () => filterSheet.classList.add('visible'));
+            filterSheet.addEventListener('click', (e) => { if (e.target === filterSheet) filterSheet.classList.remove('visible'); });
+            
+            toggleControlsBtn.addEventListener('click', () => {
+                controlsContainer.classList.toggle('hidden');
+                toggleControlsBtn.classList.toggle('collapsed');
+            });
+
+            applyFiltersBtn.addEventListener('click', () => {
+                filters.sortBy = sortBySelect.value;
+                filters.refinedMarket = marketFilterSelectModal.value;
+                filters.hitRate.category = hitRateCategorySelect.value;
+                filters.hitRate.threshold = parseInt(hitRateThresholdInput.value, 10) || 0;
+                filterSheet.classList.remove('visible');
+                applyFiltersAndRender();
+            });
+            
+            resetFiltersBtn.addEventListener('click', () => {
+                filters = { sortBy: 'last_7_price', market: 'All', refinedMarket: 'all', hitRate: { category: 'none', threshold: 0 }, selectedTeams: null, searchTerm: '' };
+                searchInput.value = '';
+                sortBySelect.value = 'last_7_price';
+                marketFilterSelectModal.value = 'all';
+                hitRateCategorySelect.value = 'none';
+                hitRateThresholdInput.value = '';
+                document.querySelectorAll('.slider-chip.active').forEach(c => c.classList.remove('active'));
+                gameSlider.querySelector('.slider-chip').classList.add('active');
+                marketSlider.querySelector('.slider-chip').classList.add('active');
+                filterSheet.classList.remove('visible');
+                applyFiltersAndRender();
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                filters.searchTerm = e.target.value.toLowerCase();
+                applyFiltersAndRender();
+            });
+
+            gameSlider.addEventListener('click', (e) => {
+                const clickedCard = e.target.closest('.slider-chip');
+                if (!clickedCard) return;
+                gameSlider.querySelector('.active').classList.remove('active');
+                clickedCard.classList.add('active');
+                filters.selectedTeams = clickedCard.dataset.teams === 'all' ? null : clickedCard.dataset.teams.split(',');
+                applyFiltersAndRender();
+            });
+
+            marketSlider.addEventListener('click', (e) => {
+                const clickedChip = e.target.closest('.slider-chip');
+                if (!clickedChip) return;
+                marketSlider.querySelector('.active').classList.remove('active');
+                clickedChip.classList.add('active');
+                filters.market = clickedChip.dataset.market;
+                applyFiltersAndRender();
+            });
+
+            window.addEventListener('scroll', () => {
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200 && !isLoading) {
+                    const hasMore = (currentPage -1) * PROPS_PER_PAGE < filteredAndSortedData.length;
+                    if(hasMore) loadMoreProps();
+                }
+            });
+
+            async function initialize() {
+                messageContainer.style.display = 'block';
+                allPropsData = await loadCSVData();
+                const allFormattedNames = [...new Set(allPropsData.map(p => p.market ? getFormattedMarketName(p.market) : null))].filter(Boolean);
+                marketFilterSelectModal.innerHTML = '<option value="all">All Markets</option>';
+                allFormattedNames.sort().forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    marketFilterSelectModal.appendChild(option);
+                });
+                renderMarketChips();
+                renderGameSlider(allPropsData);
+                applyFiltersAndRender();
+            }
+
+            initialize();
+        });
+    </script>
+</body>
+</html>
+
+
